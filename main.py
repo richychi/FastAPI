@@ -10,6 +10,13 @@ from .database import SessionLocal, engine
 
 from fastapi.middleware.cors import CORSMiddleware
 
+import configparser
+
+conf=configparser.ConfigParser()
+conf.read('config.ini')
+server=conf["SERVER"]
+userinf=conf["USERINFO"]
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -19,12 +26,7 @@ def read_root():
     return {"Hello": "World"}
 
 
-origins = [
-    "http://localhost:8000",
-    "http://localhost:3000",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:3000"
-]
+origins = server["ORIGIN"]
 
 
 app.add_middleware(
