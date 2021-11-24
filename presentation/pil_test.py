@@ -19,21 +19,24 @@ class Slide001:
 
 
 slides = [
-    ["Title of the Presentation",
-     "Subtitle of presentation",
-     "005.png",
-     0
-     ],
-    ["Title of paragraph",
-     "Content (bullet)",
-     "005.png",
-     1
-     ],
-    ["Another slide",
-     "Content is this one that I'm writing just now.",
-     "005.png",
-     2
-     ]
+    [
+        "Title of the Presentation",
+        "Subtitle of presentation",
+        "005.png",
+        0
+    ],
+    [
+        "Title of paragraph",
+        "Content (bullet)",
+        "005.png",
+        1
+    ],
+    [
+        "Another slide",
+        "Content is this one that I'm writing just now.",
+        "005.png",
+        2
+    ]
 ]
 
 for es in slides:

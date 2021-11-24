@@ -21,6 +21,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -96,11 +97,11 @@ async def create_upload_files(files: List[UploadFile] = File(...)):
 async def upload():
     content = """
 <body>
-<form action="/files/" enctype="multipart/form-data" method="post">
+<form action="""+server["API_URL"]+"""/files/ enctype="multipart/form-data" method="post">
 <input name="files" type="file" multiple>
 <input type="submit">
 </form>
-<form action="/uploadfiles/" enctype="multipart/form-data" method="post">
+<form action="""+server["API_URL"]+"""/uploadfiles/ enctype="multipart/form-data" method="post">
 <input name="files" type="file" multiple>
 <input type="submit">
 </form>
