@@ -1,7 +1,6 @@
-from typing import List
+from typing import List, Callable
 
-import uvicorn as uvicorn
-from fastapi import Depends, FastAPI, HTTPException,File, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
@@ -16,27 +15,20 @@ import configparser
 import shutil
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Callable
-from fastapi import UploadFile
 import aiofiles
-import os
+# import os
+import urllib
 
 
-conf=configparser.ConfigParser()
+conf = configparser.ConfigParser()
 conf.read('config.ini')
-server=conf["SERVER"]
-userinf=conf["USERINFO"]
+server = conf["SERVER"]
+userinf = conf["USERINFO"]
 
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
 
 origins = server["ORIGIN"]
 
@@ -57,6 +49,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@app.get("/")
+def index():
+    return {"message": "FinPlat API helped financial planners made millions!"}
 
 
 @app.post("/users/", response_model=schemas.User)
@@ -81,17 +78,12 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
-@app.post("/users/{user_id}/items/", response_model=schemas.Item)
-def create_item_for_user(
-    user_id: int, item: schemas.ItemCreate, db: Session = Depends(get_db)
-):
-    return crud.create_user_item(db=db, item=item, user_id=user_id)
-
-
-@app.get("/items/", response_model=List[schemas.Item])
-def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    items = crud.get_items(db, skip=skip, limit=limit)
-    return items
+@app.get("/users/email/{user_email}", response_model=schemas.User)
+def read_user_by_email(user_email: str, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, email=user_email)
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="Email not found")
+    return db_user
 
 
 @app.post("/files/")
@@ -161,16 +153,6 @@ async def post_endpoint3(in_file: List[UploadFile] = File(...)):
             content = await file.read()  # async read
             await out_file.write(content)  # async write
     return {"filenames": [file.filename for file in in_file]}
-
-
-# @app.post("/files/")
-# async def create_files(files: List[bytes] = File(...)):
-#     return {"file_sizes": [len(file) for file in files]}
-#
-#
-# @app.post("/uploadfiles/")
-# async def create_upload_files(files: List[UploadFile] = File(...)):
-#     return {"filenames": [file.filename for file in files]}
 
 
 def save_upload_file(upload_file: UploadFile, destination: Path) -> None:

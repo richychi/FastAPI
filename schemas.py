@@ -1,20 +1,20 @@
-from typing import List, Optional
+import datetime
+from typing import List
 
 from pydantic import BaseModel
 
 
-class ItemBase(BaseModel):
+class PresentationBase(BaseModel):
     title: str
-    description: Optional[str] = None
 
 
-class ItemCreate(ItemBase):
+class PresentationCreate(PresentationBase):
     pass
 
 
-class Item(ItemBase):
+class Presentation(PresentationBase):
     id: int
-    owner_id: int
+    is_active: bool
 
     class Config:
         orm_mode = True
@@ -25,13 +25,16 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str
+    pass
 
 
 class User(UserBase):
     id: int
     is_active: bool
-    items: List[Item] = []
 
     class Config:
         orm_mode = True
+
+
+class PresentationRename(BaseModel):
+    new_title: str
