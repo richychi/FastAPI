@@ -88,3 +88,48 @@ class SlideImage(SlideImageBase):
 
     class Config:
         orm_mode = True
+
+
+class ImageRenderBase(BaseModel):
+    title: str
+    slide_id: int
+
+
+class ImageRenderCreate(ImageRenderBase):
+    pass
+
+
+class ImageRender(ImageRenderBase):
+    id: int
+    is_active: bool
+    font: str
+    size: int
+    pos_x: int
+    pos_y: int
+    align: str
+
+    class Config:
+        orm_mode = True
+
+
+class TextRenderBase(BaseModel):
+    title: str
+    slide_id: int
+    text: str
+
+
+class TextRenderCreate(TextRenderBase):
+    pass
+
+
+class TextRender(TextRenderBase):
+    id: int
+    is_active: bool
+    font: str
+    size: int
+    pos_x: int
+    pos_y: int
+    align: str
+
+    class Config:
+        orm_mode = True

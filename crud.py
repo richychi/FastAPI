@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
-from PIL import Image
+# from PIL import Image
 
 
 def get_user(db: Session, user_id: int):
@@ -43,15 +43,15 @@ def create_presentation(db: Session, presentation: schemas.PresentationCreate):
     return db_presentation
 
 
-def delete_presentation(db: Session, presentation_id: int):
-    db_presentation = db.query(models.Presentation).filter(models.Presentation.id == presentation_id).first()
-    db.delete(db_presentation)
-    db.commit()
-    return
+# def delete_presentation(db: Session, presentation_id: int):
+#     db_presentation = db.query(models.Presentation).filter(models.Presentation.id == presentation_id).first()
+#     db.delete(db_presentation)
+#     db.commit()
+#     return
 
 
-def get_category(db: Session, id: int):
-    return db.query(models.Category).filter(models.Category.id == id).first()
+def get_category(db: Session, category_id: int):
+    return db.query(models.Category).filter(models.Category.id == category_id).first()
 
 
 def get_category_by_title(db: Session, title: str):
@@ -70,8 +70,8 @@ def create_category(db: Session, category: schemas.CategoryCreate):
     return db_category
 
 
-def get_slides(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Slide).offset(skip).limit(limit).all()
+def get_slides(db: Session):
+    return db.query(models.Slide).count()
 
 
 def get_slide(db: Session, slide_id: int):
@@ -116,8 +116,50 @@ def create_slideimage(db: Session, slideimage: schemas.SlideImageCreate):
 
 
 def convertToBinaryData(filename):
-    image = Image.open(filename)
+    # image = Image.open(filename)
     # image.show()
     with open(filename, 'rb') as file:
         blobData = file.read()
     return blobData
+
+
+def get_imagerender_by_slideid(db: Session, slide_id: int):
+    return db.query(models.ImageRender).filter(models.ImageRender.slide_id == slide_id).first()
+
+
+def get_imagerender_by_title(db: Session, slide_id, title: str):
+    return db.query(models.ImageRender).filter(models.ImageRender.title == title
+                                               and models.ImageRender.slide_id == slide_id).first()
+
+
+def get_imagerenders(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.ImageRender).offset(skip).limit(limit).all()
+
+
+def create_imagerender(db: Session, imagerender: schemas.ImageRenderCreate):
+    db_imagerender = models.ImageRender(title=imagerender.title, slide_id=imagerender.slide_id)
+    db.add(db_imagerender)
+    db.commit()
+    db.refresh(db_imagerender)
+    return db_imagerender
+
+
+def get_textrender_by_slideid(db: Session, slide_id: int):
+    return db.query(models.TextRender).filter(models.TextRender.slide_id == slide_id).first()
+
+
+def get_textrender_by_title(db: Session, title: str, slide_id):
+    return db.query(models.TextRender).filter(models.TextRender.title == title
+                                              and models.TextRender.slide_id == slide_id).first()
+
+
+def get_textrenders(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.TextRender).offset(skip).limit(limit).all()
+
+
+def create_textrender(db: Session, textrender: schemas.TextRenderCreate):
+    db_textrender = models.TextRender(title=textrender.title, slide_id=textrender.slide_id, text=textrender.text)
+    db.add(db_textrender)
+    db.commit()
+    db.refresh(db_textrender)
+    return db_textrender

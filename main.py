@@ -1,11 +1,12 @@
-import io
+# import io
+# import asyncio
 from typing import List, Callable
 
 from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
-from fastapi.openapi.models import Response
+# from fastapi.openapi.models import Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-from starlette.requests import Request
+# from starlette.requests import Request
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -20,8 +21,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 import aiofiles
 
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+# from fastapi.encoders import jsonable_encoder
+# from fastapi.responses import JSONResponse
 
 
 conf = configparser.ConfigParser()
@@ -116,7 +117,7 @@ def read_categories(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
 
 @app.get("/categories/{category_id}", response_model=schemas.Category)
 def read_category_by_id(category_id: int, db: Session = Depends(get_db)):
-    db_category = crud.get_category(db, id=category_id)
+    db_category = crud.get_category(db, category_id=category_id)
     if db_category is None:
         raise HTTPException(status_code=404, detail="Category id not found")
     return db_category
@@ -178,8 +179,8 @@ def create_slide(slide: schemas.SlideCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/slides/", response_model=schemas.Slide)
-def read_slides(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    db_slides = crud.get_slides(db, skip=skip, limit=limit)
+def read_slides(db: Session = Depends(get_db)):
+    db_slides = crud.get_slides(db)
     # if not db_slides:
     #     raise HTTPException(status_code=404, detail="Slide not found")
     return db_slides
@@ -243,6 +244,66 @@ def read_slides_by_presentation_id(presentation_id: int, db: Session = Depends(g
 #     if db_slide is None:
 #         raise HTTPException(status_code=404, detail="Presentation title not found")
 #     return db_slide
+
+
+@app.post("/imagerenders/", response_model=schemas.ImageRender)
+def create_imagerender(imagerender: schemas.ImageRenderCreate, db: Session = Depends(get_db)):
+    db_imagerender = crud.get_imagerender_by_title(db, title=imagerender.title, slide_id=imagerender.slide_id)
+    if db_imagerender:
+        raise HTTPException(status_code=400, detail="ImageRender already existed")
+    return crud.create_imagerender(db=db, imagerender=imagerender)
+
+
+@app.get("/imagerenders/", response_model=List[schemas.ImageRender])
+def read_imagerenders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    db_imagerenders = crud.get_imagerenders(db, skip=skip, limit=limit)
+    return db_imagerenders
+
+
+@app.get("/imagerender/{slide_id}", response_model=schemas.ImageRender)
+def read_imagerender_by_slideid(slide_id: int, db: Session = Depends(get_db)):
+    db_imagerender = crud.get_imagerender_by_slideid(db, slide_id=slide_id)
+    if db_imagerender is None:
+        raise HTTPException(status_code=404, detail="ImageRender by slide_id not found")
+    return db_imagerender
+
+
+@app.get("/imagerenders/title/{imagerender_title}/{imagerender_slideid}", response_model=schemas.ImageRender)
+def read_imagerender_by_title(imagerender_title: str, imagerender_slideid: int, db: Session = Depends(get_db)):
+    db_imagerender = crud.get_imagerender_by_title(db, title=imagerender_title, slide_id=imagerender_slideid)
+    if db_imagerender is None:
+        raise HTTPException(status_code=404, detail="ImageRender title not found")
+    return db_imagerender
+
+
+@app.post("/textrenders/", response_model=schemas.TextRender)
+def create_textrender(textrender: schemas.TextRenderCreate, db: Session = Depends(get_db)):
+    db_txtrender = crud.get_textrender_by_title(db, title=textrender.title, slide_id=textrender.slide_id)
+    if db_txtrender:
+        raise HTTPException(status_code=400, detail="TextRender already existed")
+    return crud.create_textrender(db=db, textrender=textrender)
+
+
+@app.get("/textrenders/", response_model=List[schemas.TextRender])
+def read_textrenders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    db_textrenders = crud.get_textrenders(db, skip=skip, limit=limit)
+    return db_textrenders
+
+
+@app.get("/textrender/{slide_id}", response_model=schemas.TextRender)
+def read_textrender_by_slideid(slide_id: int, db: Session = Depends(get_db)):
+    db_textrender = crud.get_textrender_by_slideid(db, slide_id=slide_id)
+    if db_textrender is None:
+        raise HTTPException(status_code=404, detail="TextRender by slide_id not found")
+    return db_textrender
+
+
+@app.get("/textrenders/title/{textrender_title}/{textrender_slideid}", response_model=schemas.TextRender)
+def read_textrender_by_title(textrender_title: str, textrender_slideid: int, db: Session = Depends(get_db)):
+    db_textrender = crud.get_textrender_by_title(db, title=textrender_title, slide_id=textrender_slideid)
+    if db_textrender is None:
+        raise HTTPException(status_code=404, detail="TextRender title not found")
+    return db_textrender
 
 
 @app.post("/files/")
