@@ -1,8 +1,11 @@
+import io
 from typing import List, Callable
 
 from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
+from fastapi.openapi.models import Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+from starlette.requests import Request
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -16,8 +19,9 @@ import shutil
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import aiofiles
-# import os
-import urllib
+
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 
 conf = configparser.ConfigParser()
@@ -30,7 +34,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-origins = server["ORIGIN"]
+origins = [server["API_URL"], server["ORIGIN"]]
 
 
 app.add_middleware(
@@ -40,6 +44,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# async def catch_exceptions_middleware(request: Request, call_next):
+#     try:
+#         return await call_next(request)
+#     except Exception(BaseException) as e:
+#
+#         return Response("Internal server error", status_code=500)
+#
+# app.middleware('http')(catch_exceptions_middleware)
 
 
 # Dependency
@@ -84,6 +98,151 @@ def read_user_by_email(user_email: str, db: Session = Depends(get_db)):
     if db_user is None:
         raise HTTPException(status_code=404, detail="Email not found")
     return db_user
+
+
+@app.post("/categories/", response_model=schemas.Category)
+def create_category(category: schemas.CategoryCreate, db: Session = Depends(get_db)):
+    db_category = crud.get_category_by_title(db, title=category.title)
+    if db_category:
+        raise HTTPException(status_code=400, detail="Category already existed")
+    return crud.create_category(db=db, category=category)
+
+
+@app.get("/categories/", response_model=List[schemas.Category])
+def read_categories(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    categories = crud.get_categories(db, skip=skip, limit=limit)
+    return categories
+
+
+@app.get("/categories/{category_id}", response_model=schemas.Category)
+def read_category_by_id(category_id: int, db: Session = Depends(get_db)):
+    db_category = crud.get_category(db, id=category_id)
+    if db_category is None:
+        raise HTTPException(status_code=404, detail="Category id not found")
+    return db_category
+
+
+@app.get("/categories/title/{category_title}", response_model=schemas.Category)
+def read_category_by_title(category_title: str, db: Session = Depends(get_db)):
+    db_category = crud.get_category_by_title(db, title=category_title)
+    if db_category is None:
+        raise HTTPException(status_code=404, detail="Category title not found")
+    return db_category
+
+
+@app.post("/presentations/", response_model=schemas.Presentation)
+def create_presentation(presentation: schemas.PresentationCreate, db: Session = Depends(get_db)):
+    db_presentation = crud.get_presentation_by_title(db, presentation_title=presentation.title)
+    if db_presentation:
+        raise HTTPException(status_code=400, detail="Presentation already existed")
+    return crud.create_presentation(db=db, presentation=presentation)
+
+
+# @app.post("/presentations/delete/", response_model=schemas.Presentation)
+# def delete_presentation(presentation: schemas.PresentationCreate, db: Session = Depends(get_db)):
+#     db_presentation = crud.get_presentation_by_title(db, presentation_title=presentation.title)
+#     if db_presentation:
+#         raise HTTPException(status_code=400, detail="Presentation already existed")
+#     return crud.delete_presentation(db=db, presentation=presentation)
+
+
+@app.get("/presentations/", response_model=List[schemas.Presentation])
+def read_presentations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    presentations = crud.get_presentations(db, skip=skip, limit=limit)
+    return presentations
+
+
+@app.get("/presentations/{presentation_id}", response_model=schemas.Presentation)
+def read_presentation_by_id(presentation_id: int, db: Session = Depends(get_db)):
+    db_presentation = crud.get_presentation(db, presentation_id=presentation_id)
+    if db_presentation is None:
+        raise HTTPException(status_code=404, detail="Presentation id not found")
+    return db_presentation
+
+
+@app.get("/presentations/title/{presentation_title}", response_model=schemas.Presentation)
+def read_presentation_by_title(presentation_title: str, db: Session = Depends(get_db)):
+    db_presentation = crud.get_presentation_by_title(db, presentation_title=presentation_title)
+    if db_presentation is None:
+        raise HTTPException(status_code=404, detail="Presentation title not found")
+    return db_presentation
+
+
+@app.post("/slides/", response_model=schemas.Slide)
+def create_slide(slide: schemas.SlideCreate, db: Session = Depends(get_db)):
+    db_slide = crud.get_slide_by_title(db, slide_title=slide.title, presentation_id=slide.presentation_id)
+    if db_slide:
+        raise HTTPException(status_code=400, detail="Slide already existed")
+    db_slide = crud.create_slide(db=db, slide=slide)
+    return db_slide
+
+
+@app.get("/slides/", response_model=schemas.Slide)
+def read_slides(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    db_slides = crud.get_slides(db, skip=skip, limit=limit)
+    # if not db_slides:
+    #     raise HTTPException(status_code=404, detail="Slide not found")
+    return db_slides
+    # return HTMLResponse(slides[0], media_type="image/png")  # JSONResponse(content=json_compatible_item_data)
+    #  return {"file_sizes": [len(file) for file in files]}
+# @app.get("/slides/", response_model=List[schemas.Slide])
+# def read_slides(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+#     conn = psycopg2.connect(dbname="pgDB", user="postgres", password="1133557799", host="localhost", port="5432")
+#     cur = conn.cursor()
+#     cur.execute("SELECT * FROM slides")
+#     records = cur.fetchall()
+#     cur.close()
+#     conn.close()
+#     return records
+
+
+@app.post("/slideimage/", response_model=schemas.SlideImage)
+def create_slideImage(slideimage: schemas.SlideImageCreate, db: Session = Depends(get_db)):
+    db_slideimage = crud.get_slideimage(db, slide_id=slideimage.slide_id)
+    if db_slideimage:
+        raise HTTPException(status_code=400, detail="SlideImage already existed")
+    db_slideimage = crud.create_slideimage(db=db, slideimage=slideimage)
+    return db_slideimage
+
+
+@app.get("/slideimages/", response_model=schemas.SlideImage)
+def read_slideimages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    db_slideimages = crud.get_slideimages(db, skip=skip, limit=limit)
+    if not db_slideimages:
+        raise HTTPException(status_code=404, detail="SlideImages not found")
+    return db_slideimages  # HTMLResponse(db_slideimages.image, media_type="image/png")
+
+
+@app.get("/slideimage/{slide_id}", response_model=schemas.SlideImage)
+def read_slideimage(slide_id: int, db: Session = Depends(get_db)):
+    db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
+    if db_slideimage is None:
+        raise HTTPException(status_code=404, detail="Slide id not found")
+    return HTMLResponse(db_slideimage.image, media_type="image/png")  # db_slideimage
+
+
+@app.get("/slides/slide_title/{slide_title}/{presentation_id}", response_model=schemas.Slide)
+def read_slide_by_title(slide_title: str, presentation_id: int, db: Session = Depends(get_db)):
+    db_slide = crud.get_slide_by_title(db, slide_title=slide_title, presentation_id=presentation_id)
+    if db_slide is None:
+        raise HTTPException(status_code=404, detail="Slide title not found")
+    return db_slide
+
+
+@app.get("/slides/presentation_id/{presentation_id}", response_model=schemas.Slide)
+def read_slides_by_presentation_id(presentation_id: int, db: Session = Depends(get_db)):
+    db_slide = crud.get_slides_by_presentation_id(db, presentation_id=presentation_id)
+    if db_slide is None:
+        raise HTTPException(status_code=404, detail="Presentation id not found")
+    return db_slide
+
+
+# @app.get("/slides/presentation_title/{presentation_title}", response_model=schemas.Slide)
+# def read_slide_by_presentation_title(presentation_title: str, db: Session = Depends(get_db)):
+#     db_slide = crud.get_slide_by_presentation_title(db, presentation_title=presentation_title)
+#     if db_slide is None:
+#         raise HTTPException(status_code=404, detail="Presentation title not found")
+#     return db_slide
 
 
 @app.post("/files/")

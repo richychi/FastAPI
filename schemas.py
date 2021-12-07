@@ -1,11 +1,11 @@
-import datetime
-from typing import List
-
+# import datetime
+# from typing import List, Optional
 from pydantic import BaseModel
 
 
 class PresentationBase(BaseModel):
     title: str
+    category_id: int
 
 
 class PresentationCreate(PresentationBase):
@@ -18,6 +18,10 @@ class Presentation(PresentationBase):
 
     class Config:
         orm_mode = True
+
+
+class PresentationRename(BaseModel):
+    new_title: str
 
 
 class UserBase(BaseModel):
@@ -36,5 +40,51 @@ class User(UserBase):
         orm_mode = True
 
 
-class PresentationRename(BaseModel):
-    new_title: str
+class CategoryBase(BaseModel):
+    title: str
+
+
+class CategoryCreate(CategoryBase):
+    pass
+
+
+class Category(CategoryBase):
+    id: int
+    is_active: bool
+
+    class Config:
+        orm_mode = True
+
+
+class SlideBase(BaseModel):
+    title: str
+    presentation_id: int
+
+
+class SlideCreate(SlideBase):
+    pass
+
+
+class Slide(SlideBase):
+    id: int
+    is_active: bool
+
+    class Config:
+        orm_mode = True
+
+
+class SlideImageBase(BaseModel):
+    slide_id: int
+    image: bytes
+
+
+class SlideImageCreate(SlideImageBase):
+    pass
+
+
+class SlideImage(SlideImageBase):
+    id: int
+    is_active: bool
+
+    class Config:
+        orm_mode = True

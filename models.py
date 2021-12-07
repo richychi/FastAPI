@@ -1,6 +1,6 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime
-from sqlalchemy.orm import relationship, defaultload, relation
-from sqlalchemy.sql.expression import null
+# import sqlalchemy.types
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, BLOB, LargeBinary
+from sqlalchemy.orm import relationship
 
 from .database import Base
 
@@ -12,7 +12,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=True)
 
-    orders = relationship("Order", back_populates="user")
+    orders = relationship("Order", back_populates="users")
 
 
 class Category(Base):
@@ -35,7 +35,7 @@ class Presentation(Base):
 
     category = relationship("Category", back_populates="presentations")
     slides = relationship("Slide", back_populates="presentation")
-    orders = relationship("Order", back_populates="presentation")
+    orders = relationship("Order", back_populates="presentations")
 
 
 class Slide(Base):
@@ -47,8 +47,19 @@ class Slide(Base):
     presentation_id = Column(Integer, ForeignKey("presentations.id"))
 
     presentation = relationship("Presentation", back_populates="slides")
-    text_renders = relationship("TextRender", back_populates="slide")
-    image_renders = relationship("ImageRender", back_populates="slide")
+    text_render = relationship("TextRender", back_populates="slide")
+    image_render = relationship("ImageRender", back_populates="slide")
+    slideimage = relationship("SlideImage", back_populates="slide")
+
+
+class SlideImage(Base):
+    __tablename__ = "slideimages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    image = Column(LargeBinary)
+    slide_id = Column(Integer, ForeignKey("slides.id"))
+
+    slide = relationship("Slide", back_populates="slideimage")
 
 
 class TextRender(Base):
@@ -65,7 +76,7 @@ class TextRender(Base):
     align = Column(String)
     slide_id = Column(Integer, ForeignKey("slides.id"))
 
-    slide = relationship("Slide", back_populates="text_renders")
+    slide = relationship("Slide", back_populates="text_render")
 
 
 class ImageRender(Base):
@@ -82,7 +93,7 @@ class ImageRender(Base):
     align = Column(String)
     slide_id = Column(Integer, ForeignKey("slides.id"))
 
-    slide = relationship("Slide", back_populates="image_renders")
+    slide = relationship("Slide", back_populates="image_render")
 
 
 class Order(Base):
@@ -94,5 +105,5 @@ class Order(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     presentation_id = Column(Integer, ForeignKey("presentations.id"))
 
-    user = relationship("User", back_populates="orders")
-    presentation = relationship("Presentation", back_populates="orders")
+    users = relationship("User", back_populates="orders")
+    presentations = relationship("Presentation", back_populates="orders")

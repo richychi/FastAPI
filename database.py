@@ -5,9 +5,9 @@ import psycopg2
 
 import configparser
 
-conf=configparser.ConfigParser()
+conf = configparser.ConfigParser()
 conf.read('config.ini')
-db=conf["DB"]
+db = conf["DB"]
 
 # SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
 # SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"

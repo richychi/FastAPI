@@ -1,7 +1,9 @@
 import psycopg2
+from io import BytesIO
+from PIL import Image
 
 # Connect to your postgres DB
-conn = psycopg2.connect(dbname="pgDB", user="postgres", password="@dm1nP@ssw0rd", host="localhost", port="5432")
+conn = psycopg2.connect(dbname="pgDB", user="postgres", password="1133557799", host="localhost", port="5432")
 print("Opened DB")
 # Open a cursor to perform database operations
 cur = conn.cursor()
@@ -12,9 +14,12 @@ cur = conn.cursor()
 # conn.commit()
 
 # Execute a query
-cur.execute("SELECT * FROM users")
+cur.execute("SELECT * FROM slides")
 
-# Retrieve query results
 records = cur.fetchall()
+img = BytesIO(records[0][3])
+image = Image.open(img)
+image.show()
 
-print(records)
+cur.close()
+conn.close()
