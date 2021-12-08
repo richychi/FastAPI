@@ -72,8 +72,6 @@ def create_category(db: Session, category: schemas.CategoryCreate):
 
 def get_slides(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Slide).offset(skip).limit(limit).all()
-# def get_slides(db: Session):
-#     return db.query(models.Slide).count()
 
 
 def get_slide(db: Session, slide_id: int):

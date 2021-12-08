@@ -186,17 +186,6 @@ def read_slides(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     # if not db_slides:
     #     raise HTTPException(status_code=404, detail="Slide not found")
     return db_slides
-    # return HTMLResponse(slides[0], media_type="image/png")  # JSONResponse(content=json_compatible_item_data)
-    #  return {"file_sizes": [len(file) for file in files]}
-# @app.get("/slides/", response_model=List[schemas.Slide])
-# def read_slides(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-#     conn = psycopg2.connect(dbname="pgDB", user="postgres", password="1133557799", host="localhost", port="5432")
-#     cur = conn.cursor()
-#     cur.execute("SELECT * FROM slides")
-#     records = cur.fetchall()
-#     cur.close()
-#     conn.close()
-#     return records
 
 
 @app.get("/slides/slide_title/{slide_title}/{presentation_id}", response_model=schemas.Slide)
