@@ -179,8 +179,10 @@ def create_slide(slide: schemas.SlideCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/slides/", response_model=schemas.Slide)
-def read_slides(db: Session = Depends(get_db)):
-    db_slides = crud.get_slides(db)
+def read_slides(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    db_slides = crud.get_slides(db, skip=skip, limit=limit)
+# def read_slides(db: Session = Depends(get_db)):
+#     db_slides = crud.get_slides(db)
     # if not db_slides:
     #     raise HTTPException(status_code=404, detail="Slide not found")
     return db_slides
@@ -195,6 +197,22 @@ def read_slides(db: Session = Depends(get_db)):
 #     cur.close()
 #     conn.close()
 #     return records
+
+
+@app.get("/slides/slide_title/{slide_title}/{presentation_id}", response_model=schemas.Slide)
+def read_slide_by_title(slide_title: str, presentation_id: int, db: Session = Depends(get_db)):
+    db_slide = crud.get_slide_by_title(db, slide_title=slide_title, presentation_id=presentation_id)
+    if db_slide is None:
+        raise HTTPException(status_code=404, detail="Slide title not found")
+    return db_slide
+
+
+@app.get("/slides/presentation_id/{presentation_id}", response_model=schemas.Slide)
+def read_slides_by_presentation_id(presentation_id: int, db: Session = Depends(get_db)):
+    db_slide = crud.get_slides_by_presentation_id(db, presentation_id=presentation_id)
+    if db_slide is None:
+        raise HTTPException(status_code=404, detail="Presentation id not found")
+    return db_slide
 
 
 @app.post("/slideimage/", response_model=schemas.SlideImage)
@@ -220,22 +238,6 @@ def read_slideimage(slide_id: int, db: Session = Depends(get_db)):
     if db_slideimage is None:
         raise HTTPException(status_code=404, detail="Slide id not found")
     return HTMLResponse(db_slideimage.image, media_type="image/png")  # db_slideimage
-
-
-@app.get("/slides/slide_title/{slide_title}/{presentation_id}", response_model=schemas.Slide)
-def read_slide_by_title(slide_title: str, presentation_id: int, db: Session = Depends(get_db)):
-    db_slide = crud.get_slide_by_title(db, slide_title=slide_title, presentation_id=presentation_id)
-    if db_slide is None:
-        raise HTTPException(status_code=404, detail="Slide title not found")
-    return db_slide
-
-
-@app.get("/slides/presentation_id/{presentation_id}", response_model=schemas.Slide)
-def read_slides_by_presentation_id(presentation_id: int, db: Session = Depends(get_db)):
-    db_slide = crud.get_slides_by_presentation_id(db, presentation_id=presentation_id)
-    if db_slide is None:
-        raise HTTPException(status_code=404, detail="Presentation id not found")
-    return db_slide
 
 
 # @app.get("/slides/presentation_title/{presentation_title}", response_model=schemas.Slide)

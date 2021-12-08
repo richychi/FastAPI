@@ -102,11 +102,11 @@ class ImageRenderCreate(ImageRenderBase):
 class ImageRender(ImageRenderBase):
     id: int
     is_active: bool
-    font: str
-    size: int
-    pos_x: int
-    pos_y: int
-    align: str
+    pos_x: int = None
+    pos_y: int = None
+    width: int = None
+    height: int = None
+    align: str = None
 
     class Config:
         orm_mode = True
@@ -125,11 +125,11 @@ class TextRenderCreate(TextRenderBase):
 class TextRender(TextRenderBase):
     id: int
     is_active: bool
-    font: str
-    size: int
-    pos_x: int
-    pos_y: int
-    align: str
+    font: str = None
+    size: int = None
+    pos_x: int = None
+    pos_y: int = None
+    align: str = None
 
     class Config:
         orm_mode = True

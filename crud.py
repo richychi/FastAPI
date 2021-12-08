@@ -70,8 +70,10 @@ def create_category(db: Session, category: schemas.CategoryCreate):
     return db_category
 
 
-def get_slides(db: Session):
-    return db.query(models.Slide).count()
+def get_slides(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Slide).offset(skip).limit(limit).all()
+# def get_slides(db: Session):
+#     return db.query(models.Slide).count()
 
 
 def get_slide(db: Session, slide_id: int):
@@ -79,12 +81,12 @@ def get_slide(db: Session, slide_id: int):
 
 
 def get_slide_by_title(db: Session, slide_title: str, presentation_id):
-    return db.query(models.Slide).filter(models.Slide.title == slide_title
-                                         and models.Slide.presentation_id == presentation_id).first()
+    return db.query(models.Slide).filter(models.Slide.title == slide_title).filter(
+        models.Slide.presentation_id == presentation_id).first()
 
 
 def get_slides_by_presentation_id(db: Session, presentation_id: int):
-    return db.query(models.Slide).filter(models.Slide.presentation_id == presentation_id).all()    # .first()
+    return db.query(models.Slide).filter(models.Slide.presentation_id == presentation_id).first()    # .first()
 
 
 # def get_slide_by_presentation_title(db: Session, presentation_title: str):
@@ -128,8 +130,8 @@ def get_imagerender_by_slideid(db: Session, slide_id: int):
 
 
 def get_imagerender_by_title(db: Session, slide_id, title: str):
-    return db.query(models.ImageRender).filter(models.ImageRender.title == title
-                                               and models.ImageRender.slide_id == slide_id).first()
+    return db.query(models.ImageRender).filter(models.ImageRender.title == title).filter(
+        models.ImageRender.slide_id == slide_id).first()
 
 
 def get_imagerenders(db: Session, skip: int = 0, limit: int = 100):
@@ -149,8 +151,8 @@ def get_textrender_by_slideid(db: Session, slide_id: int):
 
 
 def get_textrender_by_title(db: Session, title: str, slide_id):
-    return db.query(models.TextRender).filter(models.TextRender.title == title
-                                              and models.TextRender.slide_id == slide_id).first()
+    return db.query(models.TextRender).filter(models.TextRender.title == title).filter(
+        models.TextRender.slide_id == slide_id).first()
 
 
 def get_textrenders(db: Session, skip: int = 0, limit: int = 100):
