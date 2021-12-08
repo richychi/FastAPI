@@ -87,10 +87,6 @@ def get_slides_by_presentation_id(db: Session, presentation_id: int):
     return db.query(models.Slide).filter(models.Slide.presentation_id == presentation_id).first()    # .first()
 
 
-# def get_slide_by_presentation_title(db: Session, presentation_title: str):
-#     return db.query(models.Slide).filter(models.Slide.presentation_title == presentation_title).first()
-
-
 def create_slide(db: Session, slide: schemas.SlideCreate):
     db_slide = models.Slide(title=slide.title, presentation_id=slide.presentation_id)
     db.add(db_slide)
