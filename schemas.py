@@ -101,11 +101,11 @@ class ImageRenderCreate(ImageRenderBase):
 class ImageRender(ImageRenderBase):
     id: int
     is_active: bool
-    pos_x: int = None
-    pos_y: int = None
-    width: int = None
-    height: int = None
-    align: str = None
+    pos_x: int
+    pos_y: int
+    width: int
+    height: int
+    align: int
 
     class Config:
         orm_mode = True
@@ -115,6 +115,14 @@ class TextRenderBase(BaseModel):
     title: str
     slide_id: int
     text: str
+    font: str = 'Tahoma'
+    size: int = 14
+    pos_x: int = 20
+    pos_y: int = 20
+    align: int = 4
+    color_r: int = 255
+    color_g: int = 255
+    color_b: int = 255
 
 
 class TextRenderCreate(TextRenderBase):
@@ -124,11 +132,6 @@ class TextRenderCreate(TextRenderBase):
 class TextRender(TextRenderBase):
     id: int
     is_active: bool
-    font: str = None
-    size: int = None
-    pos_x: int = None
-    pos_y: int = None
-    align: str = None
 
     class Config:
         orm_mode = True

@@ -58,6 +58,7 @@ class SlideImage(Base):
     id = Column(Integer, primary_key=True, index=True)
     image = Column(LargeBinary)
     slide_id = Column(Integer, ForeignKey("slides.id"))
+    is_active = Column(Boolean, default=True)
 
     slide = relationship("Slide", back_populates="slideimage")
 
@@ -67,13 +68,16 @@ class TextRender(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
-    is_active = Column(Boolean, default=True, nullable=True)
+    is_active = Column(Boolean, default=True)
     text = Column(String, index=True)
-    font = Column(String, nullable=True)
-    size = Column(Integer, nullable=True)
-    pos_x = Column(Integer, nullable=True)
-    pos_y = Column(Integer, nullable=True)
-    align = Column(String, nullable=True)
+    font = Column(String, default='Tahoma')
+    size = Column(Integer, default=14)
+    pos_x = Column(Integer, default=20)
+    pos_y = Column(Integer, default=20)
+    align = Column(Integer, default=4)
+    color_r = Column(Integer, default=255)
+    color_g = Column(Integer, default=255)
+    color_b = Column(Integer, default=255)
     slide_id = Column(Integer, ForeignKey("slides.id"))
 
     slide = relationship("Slide", back_populates="text_render")

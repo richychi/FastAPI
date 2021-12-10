@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
 # from PIL import Image
+import base64
 
 
 def get_user(db: Session, user_id: int):
@@ -84,7 +85,7 @@ def get_slide_by_title(db: Session, slide_title: str, presentation_id):
 
 
 def get_slides_by_presentation_id(db: Session, presentation_id: int):
-    return db.query(models.Slide).filter(models.Slide.presentation_id == presentation_id).first()    # .first()
+    return db.query(models.Slide).filter(models.Slide.presentation_id == presentation_id).all()    # .first()
 
 
 def create_slide(db: Session, slide: schemas.SlideCreate):
@@ -100,15 +101,15 @@ def get_slideimage(db: Session, slide_id: int):
 
 
 def get_slideimages(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.SlideImage).offset(skip).limit(limit).all()  # .all()
+    return db.query(models.SlideImage).count()  # .offset(skip).limit(limit).all()
 
 
 def create_slideimage(db: Session, slideimage: schemas.SlideImageCreate):
     db_slideimage = models.SlideImage(slide_id=slideimage.slide_id, image=convertToBinaryData(slideimage.image))
     db.add(db_slideimage)
     db.commit()
-    db.refresh(db_slideimage)
-    return db_slideimage
+    # db.refresh(db_slideimage)
+    return db.query(models.SlideImage).count()  # db_slideimage
 
 
 def convertToBinaryData(filename):
@@ -154,7 +155,8 @@ def get_textrenders(db: Session, skip: int = 0, limit: int = 100):
 
 
 def create_textrender(db: Session, textrender: schemas.TextRenderCreate):
-    db_textrender = models.TextRender(title=textrender.title, slide_id=textrender.slide_id, text=textrender.text)
+    db_textrender = models.TextRender(title=textrender.title, slide_id=textrender.slide_id, text=textrender.text,
+                                      font=textrender.font)
     db.add(db_textrender)
     db.commit()
     db.refresh(db_textrender)

@@ -1,10 +1,11 @@
 # import io
 # import asyncio
+import io
 from typing import List, Callable
 
 from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
 # from fastapi.openapi.models import Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from sqlalchemy.orm import Session
 # from starlette.requests import Request
 
@@ -20,6 +21,8 @@ import shutil
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import aiofiles
+
+from PIL import Image, ImageFont, ImageDraw
 
 # from fastapi.encoders import jsonable_encoder
 # from fastapi.responses import JSONResponse
@@ -178,7 +181,7 @@ def create_slide(slide: schemas.SlideCreate, db: Session = Depends(get_db)):
     return db_slide
 
 
-@app.get("/slides/", response_model=schemas.Slide)
+@app.get("/slides/", response_model=List[schemas.Slide])
 def read_slides(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     db_slides = crud.get_slides(db, skip=skip, limit=limit)
     return db_slides
@@ -192,7 +195,7 @@ def read_slide_by_title(slide_title: str, presentation_id: int, db: Session = De
     return db_slide
 
 
-@app.get("/slides/presentation_id/{presentation_id}", response_model=schemas.Slide)
+@app.get("/slides/presentation_id/{presentation_id}", response_model=List[schemas.Slide])
 def read_slides_by_presentation_id(presentation_id: int, db: Session = Depends(get_db)):
     db_slide = crud.get_slides_by_presentation_id(db, presentation_id=presentation_id)
     if db_slide is None:
@@ -200,7 +203,7 @@ def read_slides_by_presentation_id(presentation_id: int, db: Session = Depends(g
     return db_slide
 
 
-@app.post("/slideimage/", response_model=schemas.SlideImage)
+@app.post("/slideimage/")  # , response_model=schemas.SlideImage)
 def create_slideImage(slideimage: schemas.SlideImageCreate, db: Session = Depends(get_db)):
     db_slideimage = crud.get_slideimage(db, slide_id=slideimage.slide_id)
     if db_slideimage:
@@ -209,7 +212,7 @@ def create_slideImage(slideimage: schemas.SlideImageCreate, db: Session = Depend
     return db_slideimage
 
 
-@app.get("/slideimages/", response_model=schemas.SlideImage)
+@app.get("/slideimages/")  # , response_model=List[schemas.SlideImage])
 def read_slideimages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     db_slideimages = crud.get_slideimages(db, skip=skip, limit=limit)
     if not db_slideimages:
@@ -291,6 +294,26 @@ def read_textrender_by_title(textrender_title: str, textrender_slideid: int, db:
     if db_textrender is None:
         raise HTTPException(status_code=404, detail="TextRender title not found")
     return db_textrender
+
+
+@app.get("/drawslide/{slide_id}")
+async def draw_slide(slide_id: int, db: Session = Depends(get_db)):
+    db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
+    if db_slideimage is None:
+        raise HTTPException(status_code=404, detail="Slide id not found")
+    newslideimage = Image.open(io.BytesIO(db_slideimage.image))
+    # newslideimage.show()
+    draw = ImageDraw.Draw(newslideimage)
+    db_textrender = crud.get_textrender_by_slideid(db, slide_id=slide_id)
+    if db_textrender is None:
+        raise HTTPException(status_code=404, detail="Textrender not found")
+    fnt = ImageFont.truetype(db_textrender.font, db_textrender.size)
+    draw.text(xy=(db_textrender.pos_x, db_textrender.pos_y), text=db_textrender.text,
+              font=fnt, fill=(db_textrender.color_r, db_textrender.color_g, db_textrender.color_b))
+    # newslideimage.show()
+    newslideimage.save(str(slide_id)+".png")
+    return FileResponse(str(slide_id)+".png")   # "/api/presentation/images/"+
+    # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
 
 
 @app.post("/files/")
