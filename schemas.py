@@ -92,6 +92,12 @@ class SlideImage(SlideImageBase):
 class ImageRenderBase(BaseModel):
     title: str
     slide_id: int
+    image_path: str = './api/presentation/images/'
+    pos_x: int = 1600
+    pos_y: int = 20
+    width: int = 200
+    height: int = 200
+    align: str = 'left'
 
 
 class ImageRenderCreate(ImageRenderBase):
@@ -101,11 +107,6 @@ class ImageRenderCreate(ImageRenderBase):
 class ImageRender(ImageRenderBase):
     id: int
     is_active: bool
-    pos_x: int
-    pos_y: int
-    width: int
-    height: int
-    align: int
 
     class Config:
         orm_mode = True
@@ -115,14 +116,15 @@ class TextRenderBase(BaseModel):
     title: str
     slide_id: int
     text: str
-    font: str = 'Tahoma'
-    size: int = 14
+    font: str = 'Thonburi.ttf'
+    size: int = 40
     pos_x: int = 20
     pos_y: int = 20
-    align: int = 4
-    color_r: int = 255
-    color_g: int = 255
-    color_b: int = 255
+    anchor: str = 'la'
+    align: str = 'left'
+    color_r: int = 0
+    color_g: int = 0
+    color_b: int = 0
 
 
 class TextRenderCreate(TextRenderBase):

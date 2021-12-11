@@ -247,6 +247,8 @@ def create_imagerender(imagerender: schemas.ImageRenderCreate, db: Session = Dep
 @app.get("/imagerenders/", response_model=List[schemas.ImageRender])
 def read_imagerenders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     db_imagerenders = crud.get_imagerenders(db, skip=skip, limit=limit)
+    if db_imagerenders is None:
+        raise HTTPException(status_code=404, detail="ImageRender not found")
     return db_imagerenders
 
 
@@ -307,12 +309,20 @@ async def draw_slide(slide_id: int, db: Session = Depends(get_db)):
     db_textrender = crud.get_textrender_by_slideid(db, slide_id=slide_id)
     if db_textrender is None:
         raise HTTPException(status_code=404, detail="Textrender not found")
-    fnt = ImageFont.truetype(db_textrender.font, db_textrender.size)
-    draw.text(xy=(db_textrender.pos_x, db_textrender.pos_y), text=db_textrender.text,
-              font=fnt, fill=(db_textrender.color_r, db_textrender.color_g, db_textrender.color_b))
+    fnt = ImageFont.truetype("./api/presentation/images/"+db_textrender.font, db_textrender.size)
+    draw.text(xy=(db_textrender.pos_x, db_textrender.pos_y), text=db_textrender.text, align=db_textrender.align,
+              anchor=db_textrender.anchor, font=fnt, fill=(db_textrender.color_r, db_textrender.color_g,
+                                                           db_textrender.color_b))
     # newslideimage.show()
-    newslideimage.save(str(slide_id)+".png")
-    return FileResponse(str(slide_id)+".png")   # "/api/presentation/images/"+
+    db_imagerender = crud.get_imagerender_by_slideid(db, slide_id=slide_id)
+    if db_imagerender is None:
+        raise HTTPException(status_code=404, detail="ImageRender by slide_id not found")
+    logo = Image.open("./api/presentation/images/IMT-Logo.png")
+    logo = logo.resize((db_imagerender.width, db_imagerender.height))
+    newslideimage.paste(logo, (db_imagerender.pos_x, db_imagerender.pos_y), logo)
+
+    newslideimage.save("./api/presentation/images/"+str(slide_id)+".png")
+    return FileResponse("./api/presentation/images/"+str(slide_id)+".png")   # "/api/presentation/images/"+
     # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
 
 

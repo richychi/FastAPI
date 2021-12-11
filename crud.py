@@ -134,7 +134,10 @@ def get_imagerenders(db: Session, skip: int = 0, limit: int = 100):
 
 
 def create_imagerender(db: Session, imagerender: schemas.ImageRenderCreate):
-    db_imagerender = models.ImageRender(title=imagerender.title, slide_id=imagerender.slide_id)
+    db_imagerender = models.ImageRender(title=imagerender.title, slide_id=imagerender.slide_id,
+                                        image_path=imagerender.image_path, pos_x=imagerender.pos_x,
+                                        pos_y=imagerender.pos_y, width=imagerender.width,
+                                        height=imagerender.height, align=imagerender.align)
     db.add(db_imagerender)
     db.commit()
     db.refresh(db_imagerender)
@@ -156,7 +159,10 @@ def get_textrenders(db: Session, skip: int = 0, limit: int = 100):
 
 def create_textrender(db: Session, textrender: schemas.TextRenderCreate):
     db_textrender = models.TextRender(title=textrender.title, slide_id=textrender.slide_id, text=textrender.text,
-                                      font=textrender.font)
+                                      font=textrender.font, size=textrender.size, pos_x=textrender.pos_x,
+                                      pos_y=textrender.pos_y, align=textrender.align, anchor=textrender.anchor,
+                                      color_r=textrender.color_r, color_g=textrender.color_g,
+                                      color_b=textrender.color_b)
     db.add(db_textrender)
     db.commit()
     db.refresh(db_textrender)
