@@ -326,6 +326,29 @@ async def draw_slide(slide_id: int, db: Session = Depends(get_db)):
     # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
 
 
+@app.get("/testdrawslide/{slide_id}/{text}/{font_name}/{font_size}/{text_x}/{text_y}/{color_r}/{color_g}/{color_b}"
+         "/{image_x}/{image_y}/{image_width}/{image_height}")
+async def testdraw_slide(slide_id: int, text: str, font_name: str, font_size: int, text_x: int, text_y: int,
+                         color_r: int, color_g: int, color_b: int, image_x: int, image_y: int, image_width: int,
+                         image_height: int, db: Session = Depends(get_db)):
+    db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
+    if db_slideimage is None:
+        raise HTTPException(status_code=404, detail="Slide id not found")
+    newslideimage = Image.open(io.BytesIO(db_slideimage.image))
+    # newslideimage.show()
+    draw = ImageDraw.Draw(newslideimage)
+    fnt = ImageFont.truetype("./api/presentation/images/" + font_name, font_size)
+    draw.text(xy=(text_x, text_y), text=text, align='left', anchor='la', font=fnt, fill=(color_r, color_g, color_b))
+    # newslideimage.show()
+    logo = Image.open("./api/presentation/images/IMT-Logo.png")
+    logo = logo.resize((image_width, image_height))
+    newslideimage.paste(logo, (image_x, image_y), logo)
+
+    newslideimage.save("./api/presentation/images/test"+str(slide_id)+".png")
+    return FileResponse("./api/presentation/images/test"+str(slide_id)+".png")   # "/api/presentation/images/"+
+    # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
+
+
 @app.post("/files/")
 async def create_files(files: List[bytes] = File(...)):
     return {"file_sizes": [len(file) for file in files]}
