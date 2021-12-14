@@ -203,6 +203,17 @@ def read_slides_by_presentation_id(presentation_id: int, db: Session = Depends(g
     return db_slide
 
 
+@app.get("/slides/presentation_id/{presentation_id}/{column}")
+def read_slides_by_presentation_id(presentation_id: int, column: str, db: Session = Depends(get_db)):
+    db_slide = crud.get_slides_by_presentation_id(db, presentation_id=presentation_id)
+    if db_slide is None:
+        raise HTTPException(status_code=404, detail="Presentation id not found")
+    db_column = ''
+    for i in db_slide:
+        db_column += str(i.id)+','
+    return db_column
+
+
 @app.post("/slideimage/")  # , response_model=schemas.SlideImage)
 def create_slideImage(slideimage: schemas.SlideImageCreate, db: Session = Depends(get_db)):
     db_slideimage = crud.get_slideimage(db, slide_id=slideimage.slide_id)
