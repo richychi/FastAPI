@@ -100,6 +100,13 @@ def get_slideimage(db: Session, slide_id: int):
     return db.query(models.SlideImage).filter(models.SlideImage.slide_id == slide_id).first()
 
 
+def get_slideimage_by_presentation_id(db: Session, presentation_id: int):
+    dbslide = db.query(models.Slide).filter(models.Slide.presentation_id == presentation_id).first()
+    if dbslide is None:
+        return None
+    return db.query(models.SlideImage).filter(models.SlideImage.slide_id == dbslide.id).first()
+
+
 def get_slideimages(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.SlideImage).count()  # .offset(skip).limit(limit).all()
 

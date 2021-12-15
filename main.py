@@ -50,16 +50,6 @@ app.add_middleware(
 )
 
 
-# async def catch_exceptions_middleware(request: Request, call_next):
-#     try:
-#         return await call_next(request)
-#     except Exception(BaseException) as e:
-#
-#         return Response("Internal server error", status_code=500)
-#
-# app.middleware('http')(catch_exceptions_middleware)
-
-
 # Dependency
 def get_db():
     db = SessionLocal()
@@ -234,6 +224,14 @@ def read_slideimages(skip: int = 0, limit: int = 100, db: Session = Depends(get_
 @app.get("/slideimage/{slide_id}", response_model=schemas.SlideImage)
 def read_slideimage(slide_id: int, db: Session = Depends(get_db)):
     db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
+    if db_slideimage is None:
+        raise HTTPException(status_code=404, detail="Slide id not found")
+    return HTMLResponse(db_slideimage.image, media_type="image/png")  # db_slideimage
+
+
+@app.get("/slideimage/presentation_id/{presentation_id}", response_model=schemas.SlideImage)
+def read_slideimage(presentation_id: int, db: Session = Depends(get_db)):
+    db_slideimage = crud.get_slideimage_by_presentation_id(db, presentation_id=presentation_id)
     if db_slideimage is None:
         raise HTTPException(status_code=404, detail="Slide id not found")
     return HTMLResponse(db_slideimage.image, media_type="image/png")  # db_slideimage

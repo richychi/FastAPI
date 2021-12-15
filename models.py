@@ -10,6 +10,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
+    role = Column(String, default='user')
     is_active = Column(Boolean, default=True)
 
     orders = relationship("Order", back_populates="users")
@@ -30,6 +31,7 @@ class Presentation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
+    description = Column(String, default="description")
     is_active = Column(Boolean, default=True)
     category_id = Column(Integer, ForeignKey("categories.id"))
 

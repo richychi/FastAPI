@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 class PresentationBase(BaseModel):
     title: str
+    description: str = 'description'
     category_id: int
 
 
@@ -25,6 +26,7 @@ class PresentationRename(BaseModel):
 
 class UserBase(BaseModel):
     email: str
+    role: str
 
 
 class UserCreate(UserBase):
