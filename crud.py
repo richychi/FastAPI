@@ -29,11 +29,11 @@ def get_presentations(db: Session, skip: int = 0, limit: int = 100):
 
 
 def get_presentation(db: Session, presentation_id: int):
-    return db.query(models.Presentation).filter(models.Presentation.id == presentation_id).first()
+    return db.query(models.Presentation).filter(models.Presentation.id == presentation_id).all()
 
 
 def get_presentation_by_title(db: Session, presentation_title: str):
-    return db.query(models.Presentation).filter(models.Presentation.title == presentation_title).first()
+    return db.query(models.Presentation).filter(models.Presentation.title == presentation_title).all()
 
 
 def create_presentation(db: Session, presentation: schemas.PresentationCreate):
@@ -174,3 +174,24 @@ def create_textrender(db: Session, textrender: schemas.TextRenderCreate):
     db.commit()
     db.refresh(db_textrender)
     return db_textrender
+
+
+def get_orders_by_userid(db: Session, user_id: int):
+    return db.query(models.Order).filter(models.Order.user_id == user_id).all()
+
+
+def get_orders_by_email(db: Session, email: str):
+    db_user = get_user_by_email(db, email=email)
+    return db.query(models.Order).filter(models.Order.user_id == db_user.id).all()
+
+
+def get_orders(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Order).offset(skip).limit(limit).all()
+
+
+def create_order(db: Session, order: schemas.OrderCreate):
+    db_order = models.Order(presentation_id=order.presentation_id, user_id=order.user_id, order_date=order.order_date)
+    db.add(db_order)
+    db.commit()
+    db.refresh(db_order)
+    return db_order

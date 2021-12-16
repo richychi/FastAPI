@@ -146,7 +146,7 @@ def read_presentations(skip: int = 0, limit: int = 100, db: Session = Depends(ge
     return presentations
 
 
-@app.get("/presentations/{presentation_id}", response_model=schemas.Presentation)
+@app.get("/presentations/{presentation_id}", response_model=List[schemas.Presentation])
 def read_presentation_by_id(presentation_id: int, db: Session = Depends(get_db)):
     db_presentation = crud.get_presentation(db, presentation_id=presentation_id)
     if db_presentation is None:
@@ -154,7 +154,7 @@ def read_presentation_by_id(presentation_id: int, db: Session = Depends(get_db))
     return db_presentation
 
 
-@app.get("/presentations/title/{presentation_title}", response_model=schemas.Presentation)
+@app.get("/presentations/title/{presentation_title}", response_model=List[schemas.Presentation])
 def read_presentation_by_title(presentation_title: str, db: Session = Depends(get_db)):
     db_presentation = crud.get_presentation_by_title(db, presentation_title=presentation_title)
     if db_presentation is None:
@@ -356,6 +356,35 @@ async def testdraw_slide(slide_id: int, text: str, font_name: str, font_size: in
     newslideimage.save("./api/presentation/images/test"+str(slide_id)+".png")
     return FileResponse("./api/presentation/images/test"+str(slide_id)+".png")   # "/api/presentation/images/"+
     # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
+
+
+@app.post("/orders/", response_model=schemas.Order)
+def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
+    return crud.create_order(db=db, order=order)
+
+
+@app.get("/orders/", response_model=List[schemas.Order])
+def read_orders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    orders = crud.get_orders(db, skip=skip, limit=limit)
+    if len(orders) == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return orders
+
+
+@app.get("/orders/{user_id}", response_model=List[schemas.Order])
+def read_order(user_id: int, db: Session = Depends(get_db)):
+    db_order = crud.get_orders_by_userid(db, user_id=user_id)
+    if len(db_order) == 0:
+        raise HTTPException(status_code=404, detail="User id not found")
+    return db_order
+
+
+@app.get("/orders/email/{user_email}", response_model=List[schemas.Order])
+def read_order_by_email(user_email: str, db: Session = Depends(get_db)):
+    db_order = crud.get_orders_by_email(db, email=user_email)
+    if len(db_order) == 0:
+        raise HTTPException(status_code=404, detail="Email not found")
+    return db_order
 
 
 @app.post("/files/")

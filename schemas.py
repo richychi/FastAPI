@@ -1,4 +1,5 @@
 #
+import datetime
 from pydantic import BaseModel
 
 
@@ -134,6 +135,24 @@ class TextRenderCreate(TextRenderBase):
 
 
 class TextRender(TextRenderBase):
+    id: int
+    is_active: bool
+
+    class Config:
+        orm_mode = True
+
+
+class OrderBase(BaseModel):
+    order_date: datetime.datetime = datetime.datetime.today()  # .strftime("%Y-%d-%m %H:%M:%S")
+    user_id: int
+    presentation_id: int
+
+
+class OrderCreate(OrderBase):
+    pass
+
+
+class Order(OrderBase):
     id: int
     is_active: bool
 
