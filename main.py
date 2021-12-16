@@ -162,6 +162,14 @@ def read_presentation_by_title(presentation_title: str, db: Session = Depends(ge
     return db_presentation
 
 
+@app.get("/presentations/email/{email}", response_model=List[schemas.Presentation])
+def read_presentation_by_email(email: str, db: Session = Depends(get_db)):
+    db_presentation = crud.get_presentation_by_email(db, email=email)
+    if db_presentation is None:
+        raise HTTPException(status_code=404, detail="Presentation by email not found")
+    return db_presentation
+
+
 @app.post("/slides/", response_model=schemas.Slide)
 def create_slide(slide: schemas.SlideCreate, db: Session = Depends(get_db)):
     db_slide = crud.get_slide_by_title(db, slide_title=slide.title, presentation_id=slide.presentation_id)
@@ -360,6 +368,10 @@ async def testdraw_slide(slide_id: int, text: str, font_name: str, font_size: in
 
 @app.post("/orders/", response_model=schemas.Order)
 def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db)):
+    db_order = crud.get_orders_by_userid_presentationid(db, user_id=order.user_id,
+                                                        presentation_id=order.presentation_id)
+    if db_order:
+        raise HTTPException(status_code=400, detail="User brought this presentation already")
     return crud.create_order(db=db, order=order)
 
 

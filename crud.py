@@ -36,6 +36,15 @@ def get_presentation_by_title(db: Session, presentation_title: str):
     return db.query(models.Presentation).filter(models.Presentation.title == presentation_title).all()
 
 
+def get_presentation_by_email(db: Session, email: str):
+    db_order = get_orders_by_email(db, email=email)
+    db_presentations: list[models.Presentation] = []
+    for order in db_order:
+        presentation = db.query(models.Presentation).filter(models.Presentation.id == order.presentation_id).first()
+        db_presentations.append(presentation)
+    return db_presentations
+
+
 def create_presentation(db: Session, presentation: schemas.PresentationCreate):
     db_presentation = models.Presentation(title=presentation.title, category_id=presentation.category_id)
     db.add(db_presentation)
@@ -178,6 +187,11 @@ def create_textrender(db: Session, textrender: schemas.TextRenderCreate):
 
 def get_orders_by_userid(db: Session, user_id: int):
     return db.query(models.Order).filter(models.Order.user_id == user_id).all()
+
+
+def get_orders_by_userid_presentationid(db: Session, user_id: int, presentation_id: int):
+    return db.query(models.Order).filter(models.Order.user_id == user_id).filter(
+        models.Order.presentation_id == presentation_id).all()
 
 
 def get_orders_by_email(db: Session, email: str):
