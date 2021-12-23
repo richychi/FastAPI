@@ -294,6 +294,11 @@ def create_imagerender(imagerender: schemas.ImageRenderCreate, db: Session = Dep
     return crud.create_imagerender(db=db, imagerender=imagerender)
 
 
+@app.put("/imagerender/update/", response_model=schemas.ImageRender)
+def update_imagerender(imagerender: schemas.ImageRenderCreate, db: Session = Depends(get_db)):
+    return crud.edit_imagerender(db=db, imagerender=imagerender)
+
+
 @app.get("/imagerenders/", response_model=List[schemas.ImageRender])
 def read_imagerenders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     db_imagerenders = crud.get_imagerenders(db, skip=skip, limit=limit)

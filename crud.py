@@ -163,18 +163,16 @@ def create_imagerender(db: Session, imagerender: schemas.ImageRenderCreate):
     return db_imagerender
 
 
-def edit_textrender(db: Session, textrender: schemas.TextRenderCreate):
-    db_textrender = db.query(models.TextRender).filter(models.TextRender.id==textrender.id).update(
-        {"title": textrender.title, "slide_id": textrender.slide_id, "text": textrender.text, "font": textrender.font,
-         "size": textrender.size, "pos_x": textrender.pos_x, "pos_y": textrender.pos_y, "align": textrender.align,
-         "anchor": textrender.anchor, "color_r": textrender.color_r, "color_g": textrender.color_g,
-         "color_b": textrender.color_b
+def edit_imagerender(db: Session, imagerender: schemas.ImageRenderCreate):
+    db_imagerender = db.query(models.ImageRender).filter(models.ImageRender.id==imagerender.id).update(
+        {"title": imagerender.title, "slide_id": imagerender.slide_id, "image_id": imagerender.image_id,
+         "image_path": imagerender.image_path, "height": imagerender.height, "width": imagerender.width,
+         "pos_x": imagerender.pos_x, "pos_y": imagerender.pos_y, "align": imagerender.align
          })
-
     db.commit()
-    db_textrender = db.query(models.TextRender).filter(models.TextRender.id==textrender.id).first()
-    db.refresh(db_textrender)
-    return db_textrender
+    db_imagerender = db.query(models.ImageRender).filter(models.ImageRender.id==imagerender.id).first()
+    db.refresh(db_imagerender)
+    return db_imagerender
 
 
 def get_textrender_by_slideid(db: Session, slide_id: int):
@@ -209,7 +207,6 @@ def edit_textrender(db: Session, textrender: schemas.TextRenderCreate):
          "anchor": textrender.anchor, "color_r": textrender.color_r, "color_g": textrender.color_g,
          "color_b": textrender.color_b
          })
-
     db.commit()
     db_textrender = db.query(models.TextRender).filter(models.TextRender.id==textrender.id).first()
     db.refresh(db_textrender)
