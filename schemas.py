@@ -92,10 +92,29 @@ class SlideImage(SlideImageBase):
         orm_mode = True
 
 
+class LogoImageBase(BaseModel):
+    user_id: int
+    image: bytes
+
+
+class LogoImageCreate(LogoImageBase):
+    pass
+
+
+class LogoImage(LogoImageBase):
+    id: int
+    is_active: bool
+
+    class Config:
+        orm_mode = True
+
+
 class ImageRenderBase(BaseModel):
+    id: int
     title: str
     slide_id: int
     image_path: str = './api/presentation/images/'
+    image_id: int = 1
     pos_x: int = 1600
     pos_y: int = 20
     width: int = 200
@@ -116,6 +135,7 @@ class ImageRender(ImageRenderBase):
 
 
 class TextRenderBase(BaseModel):
+    id: int
     title: str
     slide_id: int
     text: str

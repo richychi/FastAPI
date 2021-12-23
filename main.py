@@ -213,7 +213,7 @@ def read_slides_by_presentation_id(presentation_id: int, column: str, db: Sessio
 
 
 @app.post("/slideimage/")  # , response_model=schemas.SlideImage)
-def create_slideImage(slideimage: schemas.SlideImageCreate, db: Session = Depends(get_db)):
+def create_slideimage(slideimage: schemas.SlideImageCreate, db: Session = Depends(get_db)):
     db_slideimage = crud.get_slideimage(db, slide_id=slideimage.slide_id)
     if db_slideimage:
         raise HTTPException(status_code=400, detail="SlideImage already existed")
@@ -245,12 +245,45 @@ def read_slideimage(presentation_id: int, db: Session = Depends(get_db)):
     return HTMLResponse(db_slideimage.image, media_type="image/png")  # db_slideimage
 
 
-# @app.get("/slides/presentation_title/{presentation_title}", response_model=schemas.Slide)
-# def read_slide_by_presentation_title(presentation_title: str, db: Session = Depends(get_db)):
-#     db_slide = crud.get_slide_by_presentation_title(db, presentation_title=presentation_title)
-#     if db_slide is None:
-#         raise HTTPException(status_code=404, detail="Presentation title not found")
-#     return db_slide
+@app.post("/image/")  # , response_model=schemas.SlideImage)
+def create_image(logoimage: schemas.LogoImageCreate, db: Session = Depends(get_db)):
+    db_image = crud.get_image_by_user_id(db, user_id=logoimage.user_id)
+    if db_image:
+        raise HTTPException(status_code=400, detail="User have image already")
+    db_image = crud.create_image(db=db, logoimage=logoimage)
+    return db_image
+
+
+@app.get("/images/")  # , response_model=List[schemas.SlideImage])
+def read_images(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    db_images = crud.get_images(db, skip=skip, limit=limit)
+    if not db_images:
+        raise HTTPException(status_code=404, detail="Images not found")
+    return db_images  # HTMLResponse(db_slideimages.image, media_type="image/png")
+
+
+@app.get("/image/{image_id}", response_model=schemas.LogoImage)
+def read_image(image_id: int, db: Session = Depends(get_db)):
+    db_image = crud.get_image(db, image_id=image_id)
+    if db_image is None:
+        raise HTTPException(status_code=404, detail="Image id not found")
+    return HTMLResponse(db_image.image, media_type="image/png")
+
+
+@app.get("/image/user_id/{user_id}", response_model=schemas.LogoImage)
+def read_image(user_id: int, db: Session = Depends(get_db)):
+    db_image = crud.get_image_by_user_id(db, user_id=user_id)
+    if db_image is None:
+        raise HTTPException(status_code=404, detail="User id not found")
+    return HTMLResponse(db_image.image, media_type="image/png")
+
+
+@app.get("/image/email/{email}", response_model=schemas.LogoImage)
+def read_image(email: str, db: Session = Depends(get_db)):
+    db_image = crud.get_image_by_email(db, email=email)
+    if db_image is None:
+        raise HTTPException(status_code=404, detail="Email not found")
+    return HTMLResponse(db_image.image, media_type="image/png")
 
 
 @app.post("/imagerenders/", response_model=schemas.ImageRender)
@@ -291,6 +324,11 @@ def create_textrender(textrender: schemas.TextRenderCreate, db: Session = Depend
     if db_txtrender:
         raise HTTPException(status_code=400, detail="TextRender already existed")
     return crud.create_textrender(db=db, textrender=textrender)
+
+
+@app.put("/textrender/update/", response_model=schemas.TextRender)
+def update_textrender(textrender: schemas.TextRenderCreate, db: Session = Depends(get_db)):
+    return crud.edit_textrender(db=db, textrender=textrender)
 
 
 @app.get("/textrenders/", response_model=List[schemas.TextRender])

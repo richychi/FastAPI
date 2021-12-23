@@ -101,8 +101,21 @@ class ImageRender(Base):
     height = Column(Integer, default=200)
     align = Column(String, default='left')
     slide_id = Column(Integer, ForeignKey("slides.id"))
+    image_id = Column(Integer, ForeignKey("images.id"))
 
     slide = relationship("Slide", back_populates="image_render")
+    logoimage = relationship("LogoImage", back_populates="imagerenders")
+
+
+class LogoImage(Base):
+    __tablename__ = "images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    image = Column(LargeBinary)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    is_active = Column(Boolean, default=True)
+
+    imagerenders = relationship("ImageRender", back_populates="logoimage")
 
 
 class Order(Base):
