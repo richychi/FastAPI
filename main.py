@@ -16,13 +16,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import configparser
 
-
 import shutil
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import aiofiles
 
 from PIL import Image, ImageFont, ImageDraw
+import zipfile
+from glob import iglob
 
 # from fastapi.encoders import jsonable_encoder
 # from fastapi.responses import JSONResponse
@@ -358,6 +359,13 @@ def read_textrender_by_title(textrender_title: str, textrender_slideid: int, db:
     return db_textrender
 
 
+@app.get("/fonts/")
+def get_fonts():
+    path = "./api/presentation/fonts/"
+    result = iglob(path+"*.ttf")
+    return [res.replace(path,"") for res in result]
+
+
 @app.get("/drawslide/{slide_id}")
 async def draw_slide(slide_id: int, db: Session = Depends(get_db)):
     db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
@@ -369,7 +377,7 @@ async def draw_slide(slide_id: int, db: Session = Depends(get_db)):
     db_textrender = crud.get_textrender_by_slideid(db, slide_id=slide_id)
     if db_textrender is None:
         raise HTTPException(status_code=404, detail="Textrender not found")
-    fnt = ImageFont.truetype("./api/presentation/images/"+db_textrender.font, db_textrender.size)
+    fnt = ImageFont.truetype("./api/presentation/fonts/"+db_textrender.font, db_textrender.size)
     draw.text(xy=(db_textrender.pos_x, db_textrender.pos_y), text=db_textrender.text, align=db_textrender.align,
               anchor=db_textrender.anchor, font=fnt, fill=(db_textrender.color_r, db_textrender.color_g,
                                                            db_textrender.color_b))
@@ -386,6 +394,18 @@ async def draw_slide(slide_id: int, db: Session = Depends(get_db)):
     # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
 
 
+@app.get("/downloadzip/{presentation_id}")
+async def download_zip(presentation_id: int, db: Session = Depends(get_db)):
+    db_slide = crud.get_slides_by_presentation_id(db, presentation_id=presentation_id)
+    if db_slide is None:
+        raise HTTPException(status_code=404, detail="Slide by Presentation_id not found")
+    with zipfile.ZipFile("./api/presentation/images/presentation"+str(presentation_id)+".zip","w") as zf:
+        for slide in db_slide:
+            zf.write("./api/presentation/images/"+str(slide.id)+".png")
+        # zf.setpassword(b"password")
+    return FileResponse("./api/presentation/images/presentation"+str(presentation_id)+".zip")
+
+
 @app.get("/testdrawslide/{slide_id}/{text}/{font_name}/{font_size}/{text_x}/{text_y}/{color_r}/{color_g}/{color_b}"
          "/{image_x}/{image_y}/{image_width}/{image_height}")
 async def testdraw_slide(slide_id: int, text: str, font_name: str, font_size: int, text_x: int, text_y: int,
@@ -397,7 +417,7 @@ async def testdraw_slide(slide_id: int, text: str, font_name: str, font_size: in
     newslideimage = Image.open(io.BytesIO(db_slideimage.image))
     # newslideimage.show()
     draw = ImageDraw.Draw(newslideimage)
-    fnt = ImageFont.truetype("./api/presentation/images/" + font_name, font_size)
+    fnt = ImageFont.truetype("./api/presentation/fonts/" + font_name, font_size)
     draw.text(xy=(text_x, text_y), text=text, align='left', anchor='la', font=fnt, fill=(color_r, color_g, color_b))
     # newslideimage.show()
     logo = Image.open("./api/presentation/images/IMT-Logo.png")
