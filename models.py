@@ -1,4 +1,6 @@
 #
+import datetime
+
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, LargeBinary  # , BLOB, Float
 from sqlalchemy.orm import relationship
 
@@ -99,16 +101,29 @@ class ImageRender(Base):
     height = Column(Integer, default=200)
     align = Column(String, default='left')
     slide_id = Column(Integer, ForeignKey("slides.id"))
+    image_id = Column(Integer, ForeignKey("images.id"))
 
     slide = relationship("Slide", back_populates="image_render")
+    logoimage = relationship("LogoImage", back_populates="imagerenders")
+
+
+class LogoImage(Base):
+    __tablename__ = "images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    image = Column(LargeBinary)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    is_active = Column(Boolean, default=True)
+
+    imagerenders = relationship("ImageRender", back_populates="logoimage")
 
 
 class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
-    order_date = Column(DateTime)
-    is_active = Column(Boolean, default=True, nullable=True)
+    order_date = Column(DateTime, default=datetime.datetime.today())
+    is_active = Column(Boolean, default=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     presentation_id = Column(Integer, ForeignKey("presentations.id"))
 

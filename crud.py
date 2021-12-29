@@ -1,3 +1,6 @@
+import string
+
+import sqlalchemy.sql.expression
 from sqlalchemy.orm import Session
 from . import models, schemas
 # from PIL import Image
@@ -29,11 +32,20 @@ def get_presentations(db: Session, skip: int = 0, limit: int = 100):
 
 
 def get_presentation(db: Session, presentation_id: int):
-    return db.query(models.Presentation).filter(models.Presentation.id == presentation_id).first()
+    return db.query(models.Presentation).filter(models.Presentation.id == presentation_id).all()
 
 
 def get_presentation_by_title(db: Session, presentation_title: str):
-    return db.query(models.Presentation).filter(models.Presentation.title == presentation_title).first()
+    return db.query(models.Presentation).filter(models.Presentation.title == presentation_title).all()
+
+
+def get_presentation_by_email(db: Session, email: str):
+    db_order = get_orders_by_email(db, email=email)
+    db_presentations: list[models.Presentation] = []
+    for order in db_order:
+        presentation = db.query(models.Presentation).filter(models.Presentation.id == order.presentation_id).first()
+        db_presentations.append(presentation)
+    return db_presentations
 
 
 def create_presentation(db: Session, presentation: schemas.PresentationCreate):
@@ -142,11 +154,23 @@ def get_imagerenders(db: Session, skip: int = 0, limit: int = 100):
 
 def create_imagerender(db: Session, imagerender: schemas.ImageRenderCreate):
     db_imagerender = models.ImageRender(title=imagerender.title, slide_id=imagerender.slide_id,
-                                        image_path=imagerender.image_path, pos_x=imagerender.pos_x,
-                                        pos_y=imagerender.pos_y, width=imagerender.width,
+                                        image_id=imagerender.image_id, image_path=imagerender.image_path,
+                                        pos_x=imagerender.pos_x, pos_y=imagerender.pos_y, width=imagerender.width,
                                         height=imagerender.height, align=imagerender.align)
     db.add(db_imagerender)
     db.commit()
+    db.refresh(db_imagerender)
+    return db_imagerender
+
+
+def edit_imagerender(db: Session, imagerender: schemas.ImageRenderCreate):
+    db_imagerender = db.query(models.ImageRender).filter(models.ImageRender.id==imagerender.id).update(
+        {"title": imagerender.title, "slide_id": imagerender.slide_id, "image_id": imagerender.image_id,
+         "image_path": imagerender.image_path, "height": imagerender.height, "width": imagerender.width,
+         "pos_x": imagerender.pos_x, "pos_y": imagerender.pos_y, "align": imagerender.align
+         })
+    db.commit()
+    db_imagerender = db.query(models.ImageRender).filter(models.ImageRender.id==imagerender.id).first()
     db.refresh(db_imagerender)
     return db_imagerender
 
@@ -174,3 +198,69 @@ def create_textrender(db: Session, textrender: schemas.TextRenderCreate):
     db.commit()
     db.refresh(db_textrender)
     return db_textrender
+
+
+def edit_textrender(db: Session, textrender: schemas.TextRenderCreate):
+    db_textrender = db.query(models.TextRender).filter(models.TextRender.id==textrender.id).update(
+        {"title": textrender.title, "slide_id": textrender.slide_id, "text": textrender.text, "font": textrender.font,
+         "size": textrender.size, "pos_x": textrender.pos_x, "pos_y": textrender.pos_y, "align": textrender.align,
+         "anchor": textrender.anchor, "color_r": textrender.color_r, "color_g": textrender.color_g,
+         "color_b": textrender.color_b
+         })
+    db.commit()
+    db_textrender = db.query(models.TextRender).filter(models.TextRender.id==textrender.id).first()
+    db.refresh(db_textrender)
+    return db_textrender
+
+
+def get_orders_by_userid(db: Session, user_id: int):
+    return db.query(models.Order).filter(models.Order.user_id == user_id).all()
+
+
+def get_orders_by_userid_presentationid(db: Session, user_id: int, presentation_id: int):
+    return db.query(models.Order).filter(models.Order.user_id == user_id).filter(
+        models.Order.presentation_id == presentation_id).all()
+
+
+def get_orders_by_email(db: Session, email: str):
+    db_user = get_user_by_email(db, email=email)
+    return db.query(models.Order).filter(models.Order.user_id == db_user.id).all()
+
+
+def get_orders(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Order).offset(skip).limit(limit).all()
+
+
+def create_order(db: Session, order: schemas.OrderCreate):
+    db_order = models.Order(presentation_id=order.presentation_id, user_id=order.user_id, order_date=order.order_date)
+    db.add(db_order)
+    db.commit()
+    db.refresh(db_order)
+    return db_order
+
+
+def get_image(db: Session, image_id: int):
+    return db.query(models.LogoImage).filter(models.LogoImage.id == image_id).first()
+
+
+def get_image_by_user_id(db: Session, user_id: int):
+    return db.query(models.LogoImage).filter(models.LogoImage.user_id == user_id).first()
+
+
+def get_image_by_email(db: Session, email: str):
+    dbuser = db.query(models.User).filter(models.User.email == email).first()
+    if dbuser is None:
+        return None
+    return db.query(models.LogoImage).filter(models.LogoImage.user_id == dbuser.id).first()
+
+
+def get_images(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.LogoImage).count()  # .offset(skip).limit(limit).all()
+
+
+def create_image(db: Session, logoimage: schemas.LogoImageCreate):
+    db_image = models.LogoImage(user_id=logoimage.user_id, image=convertToBinaryData(logoimage.image))
+    db.add(db_image)
+    db.commit()
+    # db.refresh(db_slideimage)
+    return db.query(models.LogoImage).count()  # db_slideimage
