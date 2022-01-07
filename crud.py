@@ -56,11 +56,20 @@ def create_presentation(db: Session, presentation: schemas.PresentationCreate):
     return db_presentation
 
 
-# def delete_presentation(db: Session, presentation_id: int):
-#     db_presentation = db.query(models.Presentation).filter(models.Presentation.id == presentation_id).first()
-#     db.delete(db_presentation)
-#     db.commit()
-#     return
+def edit_presentation(db: Session, presentation: schemas.PresentationCreate):
+    db_presentation = db.query(models.Presentation).filter(models.Presentation.id==presentation.id).update(
+        {"title": presentation.title, "category_id": presentation.category_id, "description": presentation.description})
+    db.commit()
+    db_presentation = db.query(models.Presentation).filter(models.Presentation.id==presentation.id).first()
+    db.refresh(db_presentation)
+    return db_presentation
+
+
+def delete_presentation(db: Session, presentation_id: int):
+    db_presentation = db.query(models.Presentation).filter(models.Presentation.id == presentation_id).first()
+    db.delete(db_presentation)
+    db.commit()
+    return
 
 
 def get_category(db: Session, category_id: int):
