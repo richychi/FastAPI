@@ -5,7 +5,7 @@ from typing import List, Callable
 
 from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
 # from fastapi.openapi.models import Response
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 # from starlette.requests import Request
 
@@ -133,12 +133,17 @@ def create_presentation(presentation: schemas.PresentationCreate, db: Session = 
     return crud.create_presentation(db=db, presentation=presentation)
 
 
-# @app.post("/presentations/delete/", response_model=schemas.Presentation)
-# def delete_presentation(presentation: schemas.PresentationCreate, db: Session = Depends(get_db)):
-#     db_presentation = crud.get_presentation_by_title(db, presentation_title=presentation.title)
-#     if db_presentation:
-#         raise HTTPException(status_code=400, detail="Presentation already existed")
-#     return crud.delete_presentation(db=db, presentation=presentation)
+@app.put("/presentations/update/", response_model=schemas.Presentation)
+def update_presentation(presentation: schemas.PresentationCreate, db: Session = Depends(get_db)):
+    return crud.edit_presentation(db=db, presentation=presentation)
+
+
+@app.post("/presentations/delete/{presentation_id}", response_model=schemas.Presentation)
+def delete_presentation(presentation_id: int, db: Session = Depends(get_db)):
+    db_presentation = crud.get_presentation(db, presentation_id=presentation_id)
+    if db_presentation is None:
+        raise HTTPException(status_code=404, detail="Presentation not found")
+    return crud.delete_presentation(db=db, presentation_id=presentation_id)
 
 
 @app.get("/presentations/", response_model=List[schemas.Presentation])
@@ -209,7 +214,7 @@ def read_slides_by_presentation_id(presentation_id: int, column: str, db: Sessio
         raise HTTPException(status_code=404, detail="Presentation id not found")
     db_column = ''
     for i in db_slide:
-        db_column += str(i.id)+','
+        db_column += str(i.id)+','+str(i(column))
     return db_column
 
 
@@ -249,6 +254,18 @@ def read_slideimage(presentation_id: int, db: Session = Depends(get_db)):
 @app.post("/image/")  # , response_model=schemas.SlideImage)
 def create_image(logoimage: schemas.LogoImageCreate, db: Session = Depends(get_db)):
     db_image = crud.get_image_by_user_id(db, user_id=logoimage.user_id)
+    if db_image:
+        raise HTTPException(status_code=400, detail="User have image already")
+    db_image = crud.create_image(db=db, logoimage=logoimage)
+    return db_image
+
+
+@app.post("/image/{email}")  # , response_model=schemas.SlideImage)
+def create_image_by_email(email: str, logoimage: schemas.LogoImageCreate, db: Session = Depends(get_db)):
+    userid = crud.get_user_by_email(db, email=email)
+    if not userid:
+        raise HTTPException(status_code=400, detail="Email not found")
+    db_image = crud.get_image_by_user_id(db, user_id=userid)
     if db_image:
         raise HTTPException(status_code=400, detail="User have image already")
     db_image = crud.create_image(db=db, logoimage=logoimage)
@@ -361,9 +378,33 @@ def read_textrender_by_title(textrender_title: str, textrender_slideid: int, db:
 
 @app.get("/fonts/")
 def get_fonts():
-    path = "./api/presentation/fonts/"
+    path = server["FONT_PATH"]
     result = iglob(path+"*.ttf")
-    return [res.replace(path,"") for res in result]
+    return [res.replace(path, "") for res in sorted(result)]
+
+
+@app.get("/imagefiles/")
+def get_imagefiles():
+    path = server["SLIDE_PATH"]
+    result = iglob(path+"*.png")
+    return [res.replace(path, "") for res in sorted(result)]
+
+
+@app.get("/imagefile/{name}")
+async def draw_imagefile(name: str):
+    return FileResponse(server["SLIDE_PATH"]+name)
+
+
+@app.get("/logofiles/")
+def get_logofiles():
+    path = server["LOGO_PATH"]
+    result = iglob(path+"*.png")
+    return [res.replace(path, "") for res in sorted(result)]
+
+
+@app.get("/logofile/{name}")
+async def draw_logofile(name: str):
+    return FileResponse(server["LOGO_PATH"]+name)
 
 
 @app.get("/drawslide/{slide_id}")
@@ -375,19 +416,19 @@ async def draw_slide(slide_id: int, db: Session = Depends(get_db)):
     # newslideimage.show()
     draw = ImageDraw.Draw(newslideimage)
     db_textrender = crud.get_textrender_by_slideid(db, slide_id=slide_id)
-    if db_textrender is None:
-        raise HTTPException(status_code=404, detail="Textrender not found")
-    fnt = ImageFont.truetype("./api/presentation/fonts/"+db_textrender.font, db_textrender.size)
-    draw.text(xy=(db_textrender.pos_x, db_textrender.pos_y), text=db_textrender.text, align=db_textrender.align,
+    if db_textrender:
+        # raise HTTPException(status_code=404, detail="Textrender not found")
+        fnt = ImageFont.truetype("./api/presentation/fonts/"+db_textrender.font, db_textrender.size)
+        draw.text(xy=(db_textrender.pos_x, db_textrender.pos_y), text=db_textrender.text, align=db_textrender.align,
               anchor=db_textrender.anchor, font=fnt, fill=(db_textrender.color_r, db_textrender.color_g,
                                                            db_textrender.color_b))
     # newslideimage.show()
     db_imagerender = crud.get_imagerender_by_slideid(db, slide_id=slide_id)
-    if db_imagerender is None:
-        raise HTTPException(status_code=404, detail="ImageRender by slide_id not found")
-    logo = Image.open("./api/presentation/images/IMT-Logo.png")
-    logo = logo.resize((db_imagerender.width, db_imagerender.height))
-    newslideimage.paste(logo, (db_imagerender.pos_x, db_imagerender.pos_y), logo)
+    if db_imagerender:
+        # raise HTTPException(status_code=404, detail="ImageRender by slide_id not found")
+        logo = Image.open("./api/presentation/images/IMT-Logo.png")
+        logo = logo.resize((db_imagerender.width, db_imagerender.height))
+        newslideimage.paste(logo, (db_imagerender.pos_x, db_imagerender.pos_y), logo)
 
     newslideimage.save("./api/presentation/images/"+str(slide_id)+".png")
     return FileResponse("./api/presentation/images/"+str(slide_id)+".png")   # "/api/presentation/images/"+
@@ -399,7 +440,7 @@ async def download_zip(presentation_id: int, db: Session = Depends(get_db)):
     db_slide = crud.get_slides_by_presentation_id(db, presentation_id=presentation_id)
     if db_slide is None:
         raise HTTPException(status_code=404, detail="Slide by Presentation_id not found")
-    with zipfile.ZipFile("./api/presentation/images/presentation"+str(presentation_id)+".zip","w") as zf:
+    with zipfile.ZipFile("./api/presentation/images/presentation"+str(presentation_id)+".zip", "w") as zf:
         for slide in db_slide:
             zf.write("./api/presentation/images/"+str(slide.id)+".png")
         # zf.setpassword(b"password")
@@ -472,10 +513,15 @@ async def create_upload_files(files: List[UploadFile] = File(...)):
     return {"filenames": [file.filename for file in files]}
 
 
-@app.get("/upload/")
-async def upload():
+@app.get("/uploadtest/")
+async def uploadtest():
     content = """
 <body>
+<form action="""+server["API_URL"]+"""/ttf/ enctype="multipart/form-data" method="post">
+<label for="upload_ttf">Upload Font:</label>
+<input name="in_file" id="upload_ttf" type="file" multiple accept=".ttf">
+<input type="submit">
+</form>
 <form action="""+server["API_URL"]+"""/files/ enctype="multipart/form-data" method="post">files
 <input name="files" type="file" multiple>
 <input type="submit">
@@ -499,6 +545,76 @@ async def upload():
 </body>
     """
     return HTMLResponse(content=content)
+
+
+@app.get("/upload/")
+async def upload():
+    content = """
+<body>
+<form action="""+server["API_URL"]+"""/uploadttf/ enctype="multipart/form-data" method="post" 
+class="bg-white rounded-lg p-8 flex flex-col md:ml-auto w-full mt-10 md:mt-0 relative z-10 shadow-md">
+<label for="upload_ttfs">Fonts</label>
+<input name="in_file" id="upload_ttfs" type="file" multiple accept="font/ttf" class="w-full">
+<input type="submit" value="Upload Fonts" class="text-white bg-indigo-500 border-0 py-2 px-6 focus:outline-none 
+hover:bg-indigo-600 rounded text-lg">
+</form>
+<form action="""+server["API_URL"]+"""/uploadimage/ enctype="multipart/form-data" method="post" 
+class="bg-white rounded-lg p-8 flex flex-col md:ml-auto w-full mt-10 md:mt-0 relative z-10 shadow-md">
+<label for="upload_images">Images</label>
+<input name="in_file" id="upload_images" type="file" multiple accept="image/png" class="w-full">
+<input type="submit" value="Upload Slides" class="text-white bg-indigo-500 border-0 py-2 px-6 focus:outline-none 
+hover:bg-indigo-600 rounded text-lg">
+</form>
+<form action="""+server["API_URL"]+"""/uploadlogo/ enctype="multipart/form-data" method="post" 
+class="bg-white rounded-lg p-8 flex flex-col md:ml-auto w-full mt-10 md:mt-0 relative z-10 shadow-md">
+<label for="upload_logos">Logos</label>
+<input name="in_file" id="upload_logos" type="file" multiple accept="image/png" class="w-full">
+<input type="submit" value="Upload Logos" class="text-white bg-indigo-500 border-0 py-2 px-6 focus:outline-none 
+hover:bg-indigo-600 rounded text-lg">
+</form>
+</body>
+    """
+    return HTMLResponse(content=content)
+
+
+@app.post("/ttf/")
+async def post_ttf(in_file: List[UploadFile] = File(...)):
+    for file in in_file:
+        # save_upload_file(file,server["FONT_PATH"])
+        async with aiofiles.open(server["FONT_PATH"]+file.filename, 'wb') as out_file:
+            content = await file.read()  # async read
+            await out_file.write(content)  # async write
+    return {"filenames": [file.filename for file in in_file]}
+
+
+@app.post("/uploadttf/")
+async def post_ttfs(in_file: List[UploadFile] = File(...)):
+    for file in in_file:
+        # save_upload_file(file,server["FONT_PATH"])
+        async with aiofiles.open(server["FONT_PATH"]+file.filename, 'wb') as out_file:
+            content = await file.read()  # async read
+            await out_file.write(content)  # async write
+    return RedirectResponse(server["ORIGIN"]+"/mypresentation/")
+
+
+@app.post("/uploadimage/")
+async def post_images(in_file: List[UploadFile] = File(...)):
+    for file in in_file:
+        async with aiofiles.open(server["SLIDE_PATH"]+file.filename, 'wb') as out_file:
+            content = await file.read()  # async read
+            await out_file.write(content)  # async write
+    # return {RedirectResponse(server["ORIGIN"]+"/mypresentation/")}
+    return [{"Result": "OK"},{"filenames": [file.filename for file in in_file]}]
+
+
+@app.post("/uploadlogo/")
+async def post_logos(in_file: List[UploadFile] = File(...)):
+    for file in in_file:
+        async with aiofiles.open(server["LOGO_PATH"]+file.filename, 'wb') as out_file:
+            content = await file.read()  # async read
+            await out_file.write(content)  # async write
+    # return {RedirectResponse(server["ORIGIN"]+"/mypresentation/")}
+    return [{"Result": "OK"},{"filenames": [file.filename for file in in_file]}]
 
 
 @app.post("/endpoint1/")

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 
 class PresentationBase(BaseModel):
+    id: int
     title: str
     description: str = 'description'
     category_id: int
@@ -163,6 +164,7 @@ class TextRender(TextRenderBase):
 
 
 class OrderBase(BaseModel):
+    id: int
     order_date: datetime.datetime = datetime.datetime.today()  # .strftime("%Y-%d-%m %H:%M:%S")
     user_id: int
     presentation_id: int
