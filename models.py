@@ -13,9 +13,17 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     role = Column(String, default='user')
-    is_active = Column(Boolean, default=True)
+    firstname = Column(String, default='')
+    lastname = Column(String, default='')
+    contact_no = Column(String, default='')
+    contact_line = Column(String, default='')
+    contact_fb = Column(String, default='')
+    contact_ig = Column(String, default='')
+    contact_tw = Column(String, default='')
+    contact_info = Column(String, default='')
+    is_active = Column(Boolean, default='')
 
-    orders = relationship("Order", back_populates="users")
+    rights = relationship("Right", back_populates="users")
 
 
 class Category(Base):
@@ -39,7 +47,8 @@ class Presentation(Base):
 
     category = relationship("Category", back_populates="presentations")
     slides = relationship("Slide", back_populates="presentation")
-    orders = relationship("Order", back_populates="presentations")
+    bundle_presentations = relationship("BundlePresentation", back_populates="presentations")
+    rights = relationship("Right", back_populates="presentations")
 
 
 class Slide(Base):
@@ -49,6 +58,7 @@ class Slide(Base):
     title = Column(String, index=True)
     is_active = Column(Boolean, default=True)
     presentation_id = Column(Integer, ForeignKey("presentations.id"))
+    order = Column(Integer)
 
     presentation = relationship("Presentation", back_populates="slides")
     text_render = relationship("TextRender", back_populates="slide")
@@ -101,21 +111,21 @@ class ImageRender(Base):
     height = Column(Integer, default=200)
     align = Column(String, default='left')
     slide_id = Column(Integer, ForeignKey("slides.id"))
-    image_id = Column(Integer, ForeignKey("images.id"))
+    image_id = Column(Integer, ForeignKey("logo.id"))
 
     slide = relationship("Slide", back_populates="image_render")
-    logoimage = relationship("LogoImage", back_populates="imagerenders")
+    logoimage = relationship("LogoImage", back_populates="image_renders")
 
 
 class LogoImage(Base):
-    __tablename__ = "images"
+    __tablename__ = "logo"
 
     id = Column(Integer, primary_key=True, index=True)
     image = Column(LargeBinary)
     user_id = Column(Integer, ForeignKey("users.id"))
     is_active = Column(Boolean, default=True)
 
-    imagerenders = relationship("ImageRender", back_populates="logoimage")
+    image_renders = relationship("ImageRender", back_populates="logoimage")
 
 
 class Order(Base):
@@ -124,8 +134,68 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     order_date = Column(DateTime, default=datetime.datetime.today())
     is_active = Column(Boolean, default=True)
+    user_email = Column(String, index=True)
+    bundle_id = Column(Integer, ForeignKey("bundles.id"))
+
+    bundle = relationship("Bundle", back_populates="order")
+
+
+class Right(Base):
+    __tablename__ = "right"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_date = Column(DateTime, default=datetime.datetime.today())
+    is_active = Column(Boolean, default=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     presentation_id = Column(Integer, ForeignKey("presentations.id"))
 
-    users = relationship("User", back_populates="orders")
-    presentations = relationship("Presentation", back_populates="orders")
+    users = relationship("User", back_populates="rights")
+    presentations = relationship("Presentation", back_populates="rights")
+
+
+class Bundle(Base):
+    __tablename__ = "bundles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    price = Column(Integer, default=0)
+    start_date = Column(DateTime, default=datetime.datetime.today())
+    # end_date = Column(DateTime)
+    is_active = Column(Boolean, default=True)
+
+    bundle_presentations = relationship("BundlePresentation", back_populates="bundles")
+    order = relationship("Order", back_populates="bundle")
+
+
+class BundlePresentation(Base):
+    __tablename__ = "bundle_presentations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bundle_id = Column(Integer, ForeignKey("bundles.id"))
+    presentation_id = Column(Integer, ForeignKey("presentations.id"))
+    is_active = Column(Boolean, default=True)
+
+    bundles = relationship("Bundle", back_populates="bundle_presentations")
+    presentations = relationship("Presentation", back_populates="bundle_presentations")
+
+
+class ChangeLog(Base):
+    __tablename__ = "change_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    when = Column(DateTime, default=datetime.datetime.today())
+    table = Column(String, index=True)
+    old = Column(String, index=True)
+    new = Column(String, index=True)
+    remark = Column(String)
+
+
+class ChangeImageLog(Base):
+    __tablename__ = "changeimage_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    when = Column(DateTime, default=datetime.datetime.today())
+    new = Column(LargeBinary)
+    remark = Column(String)

@@ -27,8 +27,17 @@ class PresentationRename(BaseModel):
 
 
 class UserBase(BaseModel):
+    id: int
     email: str
     role: str
+    firstname: str = ''
+    lastname: str = ''
+    contact_no: str = ''
+    contact_line: str = ''
+    contact_fb: str = ''
+    contact_ig: str = ''
+    contact_tw: str = ''
+    contact_info: str = ''
 
 
 class UserCreate(UserBase):
@@ -62,6 +71,7 @@ class Category(CategoryBase):
 class SlideBase(BaseModel):
     title: str
     presentation_id: int
+    order: int
 
 
 class SlideCreate(SlideBase):
@@ -164,10 +174,9 @@ class TextRender(TextRenderBase):
 
 
 class OrderBase(BaseModel):
-    id: int
     order_date: datetime.datetime = datetime.datetime.today()  # .strftime("%Y-%d-%m %H:%M:%S")
-    user_id: int
-    presentation_id: int
+    user_email: str
+    bundle_id: int
 
 
 class OrderCreate(OrderBase):
@@ -177,6 +186,86 @@ class OrderCreate(OrderBase):
 class Order(OrderBase):
     id: int
     is_active: bool
+
+    class Config:
+        orm_mode = True
+
+
+class RightBase(BaseModel):
+    id: int
+    order_date: datetime.datetime = datetime.datetime.today()  # .strftime("%Y-%d-%m %H:%M:%S")
+    user_id: int
+    presentation_id: int
+
+
+class RightCreate(RightBase):
+    pass
+
+
+class Right(RightBase):
+    id: int
+    is_active: bool
+
+    class Config:
+        orm_mode = True
+
+
+class BundleBase(BaseModel):
+    id: int
+    title: str
+    price: int
+    start_date: datetime.datetime = datetime.datetime.today()  # .strftime("%Y-%d-%m %H:%M:%S")
+    # end_date: datetime.datetime
+
+
+class BundleCreate(BundleBase):
+    pass
+
+
+class Bundle(BundleBase):
+    id: int
+    is_active: bool
+
+    class Config:
+        orm_mode = True
+
+
+class BundlePresentationBase(BaseModel):
+    bundle_id: int
+    presentation_id: int
+
+
+class BundlePresentationCreate(BundlePresentationBase):
+    pass
+
+
+class BundlePresentation(BundlePresentationBase):
+    id: int
+    is_active: bool
+
+    class Config:
+        orm_mode = True
+
+
+class ChangeLog(BaseModel):
+    id: int
+    user_id: int
+    when: datetime.datetime = datetime.datetime.today()
+    table: str
+    old: str
+    new: str
+    remark: str = ""
+
+    class Config:
+        orm_mode = True
+
+
+class ChangeImageLog(BaseModel):
+    id: int
+    user_id: int
+    when: datetime.datetime = datetime.datetime.today()
+    new: bytes
+    remark: str
 
     class Config:
         orm_mode = True
