@@ -1,5 +1,6 @@
 # import io
 # import asyncio
+import hashlib
 import io
 from typing import List, Callable
 
@@ -125,9 +126,14 @@ def create_bundle(bundle: schemas.BundleCreate, db: Session = Depends(get_db)):
     return crud.create_bundle(db=db, bundle=bundle)
 
 
-@app.put("/bundle/update/", response_model=schemas.Bundle)
+@app.post("/bundle/update/", response_model=schemas.Bundle)
 def update_bundle(bundle: schemas.BundleCreate, db: Session = Depends(get_db)):
     return crud.edit_bundle(db=db, bundle=bundle)
+
+
+@app.post("/bundle/delete/")
+def delete_bundle(bundle: schemas.Bundle, db: Session = Depends(get_db)):
+    return crud.delete_bundle(db=db, bundle=bundle)
 
 
 @app.get("/bundles/", response_model=List[schemas.Bundle])
@@ -162,6 +168,11 @@ def create_bundlepresentation(bundlepresentation: schemas.BundlePresentationCrea
     return crud.create_bundlepresentation(db=db, bundlepresentation=bundlepresentation)
 
 
+@app.post("/bundlepresentation/delete/")
+def delete_bundlepresentation(bundlepresentation: schemas.BundlePresentationCreate, db: Session = Depends(get_db)):
+    return crud.delete_bundlepresentation_by_bundleid(db=db, bundle_id=bundlepresentation.bundle_id)
+
+
 @app.get("/bundlepresentations/", response_model=List[schemas.BundlePresentation])
 def read_bundlepresentations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     bundlepresentation = crud.get_bundlepresentations(db, skip=skip, limit=limit)
@@ -193,7 +204,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db=db, user=user)
 
 
-@app.put("/users/update/", response_model=schemas.User)
+@app.post("/users/update/", response_model=schemas.User)
 def update_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.edit_user(db=db, user=user)
 
@@ -264,17 +275,17 @@ def create_presentation(presentation: schemas.PresentationCreate, db: Session = 
     return crud.create_presentation(db=db, presentation=presentation)
 
 
-@app.put("/presentations/update/", response_model=schemas.Presentation)
+@app.post("/presentations/update/", response_model=schemas.Presentation)
 def update_presentation(presentation: schemas.PresentationCreate, db: Session = Depends(get_db)):
     return crud.edit_presentation(db=db, presentation=presentation)
 
 
-@app.post("/presentations/delete/{presentation_id}", response_model=schemas.Presentation)
-def delete_presentation(presentation_id: int, db: Session = Depends(get_db)):
-    db_presentation = crud.get_presentation(db, presentation_id=presentation_id)
+@app.post("/presentations/delete/")
+def delete_presentation(presentation: schemas.PresentationCreate, db: Session = Depends(get_db)):
+    db_presentation = crud.get_presentation(db, presentation_id=presentation.id)
     if db_presentation is None:
         raise HTTPException(status_code=404, detail="Presentation not found")
-    return crud.delete_presentation(db=db, presentation_id=presentation_id)
+    return crud.delete_presentation(db=db, presentation=presentation)
 
 
 @app.get("/presentations/", response_model=List[schemas.Presentation])
@@ -309,16 +320,24 @@ def read_presentation_by_email(email: str, db: Session = Depends(get_db)):
 
 @app.post("/slides/", response_model=schemas.Slide)
 def create_slide(slide: schemas.SlideCreate, db: Session = Depends(get_db)):
-    db_slide = crud.get_slide_by_title(db, slide_title=slide.title, presentation_id=slide.presentation_id)
-    if db_slide:
-        raise HTTPException(status_code=400, detail="Slide already existed")
+    # db_slide = crud.get_slide_by_title(db, slide_title=slide.title, presentation_id=slide.presentation_id)
+    # if db_slide:
+    #     raise HTTPException(status_code=400, detail="Slide already existed")
     db_slide = crud.create_slide(db=db, slide=slide)
+    # await draw_thumb(slide_id=db_slide.id,email="xxx",db=db)
     return db_slide
 
 
-@app.put("/slide/update/", response_model=schemas.Slide)
+@app.post("/slide/update/", response_model=schemas.Slide)
+async def update_slide(slide: schemas.Slide, db: Session = Depends(get_db)):
+    db_slide = crud.edit_slide(db=db, slide=slide)
+    await draw_thumb(slide_id=slide.id,email="xxx",db=db)
+    return db_slide
+
+
+@app.post("/slide/delete/")
 def update_slide(slide: schemas.Slide, db: Session = Depends(get_db)):
-    return crud.edit_slide(db=db, slide=slide)
+    return crud.delete_slide(db=db, slide=slide)
 
 
 @app.get("/slides/", response_model=List[schemas.Slide])
@@ -368,12 +387,14 @@ def create_slideimage(slideimage: schemas.SlideImageCreate, db: Session = Depend
     if db_slideimage:
         raise HTTPException(status_code=400, detail="SlideImage already existed")
     db_slideimage = crud.create_slideimage(db=db, slideimage=slideimage)
+    # await draw_thumb(slide_id=slideimage.slide_id,email="xxx",db=db)
     return db_slideimage
 
 
-@app.put("/slideimage/update/")
-def update_slideimage(slideimage: schemas.SlideImageCreate, db: Session = Depends(get_db)):
+@app.post("/slideimage/update/")
+async def update_slideimage(slideimage: schemas.SlideImage, db: Session = Depends(get_db)):
     db_slideimage = crud.edit_slideimage(db=db, slideimage=slideimage)
+    await draw_thumb(slide_id=slideimage.slide_id,email="xxx",db=db)
     return db_slideimage # HTMLResponse(db_slideimage.image, media_type="image/png")
 
 
@@ -383,6 +404,14 @@ def read_slideimages(skip: int = 0, limit: int = 100, db: Session = Depends(get_
     if not db_slideimages:
         raise HTTPException(status_code=404, detail="SlideImages not found")
     return db_slideimages  # HTMLResponse(db_slideimages.image, media_type="image/png")
+
+
+@app.get("/slideimageid/{slide_id}")
+def read_slideimage(slide_id: int, db: Session = Depends(get_db)):
+    db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
+    if db_slideimage is None:
+        raise HTTPException(status_code=404, detail="Slide id not found")
+    return db_slideimage.id
 
 
 @app.get("/slideimage/{slide_id}", response_model=schemas.SlideImage)
@@ -423,13 +452,13 @@ def create_image_by_email(email: str, logoimage: schemas.LogoImageCreate, db: Se
     return db_image
 
 
-@app.put("/image/update/", response_model=schemas.LogoImage)
+@app.post("/image/update/", response_model=schemas.LogoImage)
 def update_image(logoimage: schemas.LogoImageCreate, db: Session = Depends(get_db)):
     db_image = crud.edit_image(db=db, logoimage=logoimage)
     return HTMLResponse(db_image.image, media_type="image/png")
 
 
-@app.put("/image/update/email/{email}", response_model=schemas.LogoImage)
+@app.post("/image/update/email/{email}", response_model=schemas.LogoImage)
 def update_image_by_email(email: str, logoimage: schemas.LogoImageCreate, db: Session = Depends(get_db)):
     db_image = crud.edit_image_by_email(email=email, db=db, logoimage=logoimage)
     return HTMLResponse(db_image.image, media_type="image/png")
@@ -468,16 +497,20 @@ def read_image(email: str, db: Session = Depends(get_db)):
 
 
 @app.post("/imagerenders/", response_model=schemas.ImageRender)
-def create_imagerender(imagerender: schemas.ImageRenderCreate, db: Session = Depends(get_db)):
+async def create_imagerender(imagerender: schemas.ImageRenderCreate, db: Session = Depends(get_db)):
     db_imagerender = crud.get_imagerender_by_title(db, title=imagerender.title, slide_id=imagerender.slide_id)
     if db_imagerender:
         raise HTTPException(status_code=400, detail="ImageRender already existed")
-    return crud.create_imagerender(db=db, imagerender=imagerender)
+    db_imagerender = crud.create_imagerender(db=db, imagerender=imagerender)
+    await draw_thumb(slide_id=imagerender.slide_id,email="xxx",db=db)
+    return db_imagerender
 
 
-@app.put("/imagerender/update/", response_model=schemas.ImageRender)
-def update_imagerender(imagerender: schemas.ImageRenderCreate, db: Session = Depends(get_db)):
-    return crud.edit_imagerender(db=db, imagerender=imagerender)
+@app.post("/imagerender/update/", response_model=schemas.ImageRender)
+async def update_imagerender(imagerender: schemas.ImageRenderCreate, db: Session = Depends(get_db)):
+    db_imagerender =crud.edit_imagerender(db=db, imagerender=imagerender)
+    await draw_thumb(slide_id=imagerender.slide_id,email="xxx",db=db)
+    return db_imagerender
 
 
 @app.get("/imagerenders/", response_model=List[schemas.ImageRender])
@@ -505,16 +538,20 @@ def read_imagerender_by_title(imagerender_title: str, imagerender_slideid: int, 
 
 
 @app.post("/textrenders/", response_model=schemas.TextRender)
-def create_textrender(textrender: schemas.TextRenderCreate, db: Session = Depends(get_db)):
+async def create_textrender(textrender: schemas.TextRenderCreate, db: Session = Depends(get_db)):
     db_txtrender = crud.get_textrender_by_title(db, title=textrender.title, slide_id=textrender.slide_id)
     if db_txtrender:
         raise HTTPException(status_code=400, detail="TextRender already existed")
-    return crud.create_textrender(db=db, textrender=textrender)
+    db_txtrender = crud.create_textrender(db=db, textrender=textrender)
+    await draw_thumb(slide_id=textrender.slide_id,email="xxx",db=db)
+    return db_txtrender
 
 
-@app.put("/textrender/update/", response_model=schemas.TextRender)
-def update_textrender(textrender: schemas.TextRenderCreate, db: Session = Depends(get_db)):
-    return crud.edit_textrender(db=db, textrender=textrender)
+@app.post("/textrender/update/", response_model=schemas.TextRender)
+async def update_textrender(textrender: schemas.TextRenderCreate, db: Session = Depends(get_db)):
+    db_txtrender = crud.edit_textrender(db=db, textrender=textrender)
+    await draw_thumb(slide_id=textrender.slide_id,email="xxx",db=db)
+    return db_txtrender
 
 
 @app.get("/textrenders/", response_model=List[schemas.TextRender])
@@ -591,34 +628,36 @@ async def get_logofile(name: str):
 
 
 @app.get("/drawslideimage/{slide_id}/{email}")
-async def draw_slide(slide_id: int, email: str, db: Session = Depends(get_db)):
+async def draw_slideimage(slide_id: int, email: str, db: Session = Depends(get_db)):
     db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
     if db_slideimage is None:
         raise HTTPException(status_code=404, detail="Slide id not found")
     newslideimage = Image.open(io.BytesIO(db_slideimage.image))
     # newslideimage.show()
     usr = crud.get_user_by_email(db,email=email)
+    print('user: '+usr)
     draw = ImageDraw.Draw(newslideimage)
     db_textrender = crud.get_textrender_by_slideid(db, slide_id=slide_id)
+    print('db_textrender.text')
     if db_textrender:
         txt = ""
         if usr:
-            if db_textrender.text=="email":
+            if db_textrender.text == "email":
                 txt = usr.email
             else:
-                if db_textrender.text=="firstname":
+                if db_textrender.text == "firstname":
                     txt = usr.firstname
                 else:
-                    if db_textrender.text=="lastname":
+                    if db_textrender.text == "lastname":
                         txt = usr.lastname
                     else:
-                        if db_textrender.text=="fullname":
+                        if db_textrender.text == "fullname":
                             txt = usr.firstname + " " + usr.lastname
                         else:
-                            if db_textrender.text=="contact_no":
+                            if db_textrender.text == "contact_no":
                                 txt = usr.contact_no
                             else:
-                                if db_textrender.text=="contact_info":
+                                if db_textrender.text == "contact_info":
                                     txt = usr.contact_info
                                 else:
                                     txt = db_textrender.text
@@ -657,22 +696,22 @@ async def draw_slide(slide_id: int, email: str, db: Session = Depends(get_db)):
     if db_textrender:
         txt = ""
         if usr:
-            if db_textrender.text=="email":
+            if db_textrender.text == "email":
                 txt = usr.email
             else:
-                if db_textrender.text=="firstname":
+                if db_textrender.text == "firstname":
                     txt = usr.firstname
                 else:
-                    if db_textrender.text=="lastname":
+                    if db_textrender.text == "lastname":
                         txt = usr.lastname
                     else:
-                        if db_textrender.text=="fullname":
+                        if db_textrender.text == "fullname":
                             txt = usr.firstname + " " + usr.lastname
                         else:
-                            if db_textrender.text=="contact_no":
+                            if db_textrender.text == "contact_no":
                                 txt = usr.contact_no
                             else:
-                                if db_textrender.text=="contact_info":
+                                if db_textrender.text == "contact_info":
                                     txt = usr.contact_info
                                 else:
                                     txt = db_textrender.text
@@ -693,17 +732,141 @@ async def draw_slide(slide_id: int, email: str, db: Session = Depends(get_db)):
             newslideimage.paste(logo, (db_imagerender.pos_x, db_imagerender.pos_y), logo)
         except Exception:
             newslideimage.paste(logo, (db_imagerender.pos_x, db_imagerender.pos_y))
-    # if os.path.exists(email):
-    #     print("path "+email+" exists")
-    # else:
-    #     os.mkdir(email)
+    if os.path.exists(email):
+        print("path "+email+" exists")
+    else:
+        os.mkdir(email)
     epath = email #.replace(".", "").replace("@","")
     newslideimage.save(epath + "/" + str(slide_id) + ".png")
     return FileResponse(epath + "/" + str(slide_id) + ".png")  # "/api/presentation/images/"+
     # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
 
 
+@app.get("/drawslidetest/{slide_id}/{email}/{slide_name}/{text}/{font_name}/{font_size}/{text_x}/{text_y}/{text_anchor}"
+         "/{color_r}/{color_g}/{color_b}/{image_x}/{image_y}/{image_width}/{image_height}")
+async def draw_slidetest(slide_id: int, email: str, slide_name: str, text: str, font_name: str, font_size: int, text_x: int,
+                     text_y: int, text_anchor: str, color_r: int, color_g: int, color_b: int,
+                     image_x: int, image_y: int, image_width: int, image_height: int, db: Session = Depends(get_db)):
+    if slide_name == "" or slide_name == "Old Slide Image":
+        db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
+        if db_slideimage is None:
+            raise HTTPException(status_code=404, detail="Slide id not found")
+        newslideimage = Image.open(io.BytesIO(db_slideimage.image))
+    else:
+        newslideimage = Image.open(server["SLIDE_PATH"] + slide_name)
+    draw = ImageDraw.Draw(newslideimage)
+    usr = crud.get_user_by_email(db,email=email)
+    if text:
+        txt = ""
+        if usr:
+            if text == "email":
+                txt = usr.email
+            else:
+                if text == "firstname":
+                    txt = usr.firstname
+                else:
+                    if text == "lastname":
+                        txt = usr.lastname
+                    else:
+                        if text == "fullname":
+                            txt = usr.firstname + " " + usr.lastname
+                        else:
+                            if text == "contact_no":
+                                txt = usr.contact_no
+                            else:
+                                if text == "contact_info":
+                                    txt = usr.contact_info
+                                else:
+                                    txt = text
+        fnt = ImageFont.truetype(server["FONT_PATH"] + font_name, font_size)
+        draw.text(xy=(text_x, text_y), text=txt, anchor=text_anchor, font=fnt, fill=(color_r, color_g, color_b))
+
+    db_logo = crud.get_image_by_email(db, email=email)
+    if db_logo:
+        logo = Image.open(io.BytesIO(db_logo.image))
+    else:
+        logo = Image.open(server["IMAGE_PATH"] + "placeholder.png")
+    logo = logo.resize((image_width, image_height))
+    try:
+        newslideimage.paste(logo, (image_x, image_y), logo)
+    except Exception:
+        newslideimage.paste(logo, (image_x, image_y))
+    if os.path.exists(email):
+        print("path "+email+" exists")
+    else:
+        os.mkdir(email)
+    epath = email #.replace(".", "").replace("@","")
+    newslideimage.save(epath + "/" + str(slide_id) + ".png")
+    return FileResponse(epath + "/" + str(slide_id) + ".png")  # "/api/presentation/images/"+
+    # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
+
+
+@app.get("/testdrawslide/{slide_id}/{text}/{font_name}/{font_size}/{text_x}/{text_y}/{color_r}/{color_g}/{color_b}"
+         "/{image_x}/{image_y}/{image_width}/{image_height}/{email}")
+async def testdraw_slide(slide_id: int, text: str, font_name: str, font_size: int, text_x: int, text_y: int,
+                         color_r: int, color_g: int, color_b: int, image_x: int, image_y: int, image_width: int,
+                         image_height: int, email: str, db: Session = Depends(get_db)):
+    db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
+    if db_slideimage is None:
+        raise HTTPException(status_code=404, detail="Slide id not found")
+    newslideimage = Image.open(io.BytesIO(db_slideimage.image))
+    # newslideimage.show()
+    draw = ImageDraw.Draw(newslideimage)
+    fnt = ImageFont.truetype(server["FONT_PATH"] + font_name, font_size)
+    draw.text(xy=(text_x, text_y), text=text, align='left', anchor='la', font=fnt, fill=(color_r, color_g, color_b))
+    # newslideimage.show()
+    db_logo = crud.get_image_by_email(db, email=email)
+    if db_logo is None:
+        logo = Image.open(server["IMAGE_PATH"] + "placeholder.png")
+    else:
+        logo = Image.open(io.BytesIO(db_logo.image))
+    logo = logo.resize((image_width, image_height))
+    try:
+        newslideimage.paste(logo, (image_x, image_y), logo)
+    except Exception:
+        newslideimage.paste(logo, (image_x, image_y))
+
+    newslideimage.save(server["IMAGE_PATH"] + "test" + str(slide_id) + ".png")
+    return FileResponse(server["IMAGE_PATH"] + "test" + str(slide_id) + ".png")  # "/api/presentation/images/"+
+    # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
+
+
 @app.get("/drawthumb/{slide_id}/{email}")
+async def get_thumb(slide_id: int, email: str, db: Session = Depends(get_db)):
+    if os.path.isfile(server["IMAGE_PATH"] + str(slide_id) + ".png"):
+        print("file "+server["IMAGE_PATH"] + str(slide_id) + ".png"+" exists")
+    else:
+        print("draw new "+server["IMAGE_PATH"] + str(slide_id) + ".png")
+        db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
+        if db_slideimage is None:
+            raise HTTPException(status_code=404, detail="Slide id not found")
+        newslideimage = Image.open(io.BytesIO(db_slideimage.image))
+        # newslideimage.show()
+        draw = ImageDraw.Draw(newslideimage)
+        db_textrender = crud.get_textrender_by_slideid(db, slide_id=slide_id)
+        if db_textrender:
+            # raise HTTPException(status_code=404, detail="Textrender not found")
+            fnt = ImageFont.truetype(server["FONT_PATH"] + db_textrender.font, db_textrender.size)
+            draw.text(xy=(db_textrender.pos_x, db_textrender.pos_y), text=db_textrender.text, align=db_textrender.align,
+                      anchor=db_textrender.anchor, font=fnt, fill=(db_textrender.color_r,
+                      db_textrender.color_g, db_textrender.color_b))
+        # newslideimage.show()
+        db_imagerender = crud.get_imagerender_by_slideid(db, slide_id=slide_id)
+        if db_imagerender:
+            logo = Image.open(server["IMAGE_PATH"] + "placeholder.png")
+            logo = logo.resize((db_imagerender.width, db_imagerender.height))
+            try:
+                newslideimage.paste(logo, (db_imagerender.pos_x, db_imagerender.pos_y), logo)
+            except Exception:
+                newslideimage.paste(logo, (db_imagerender.pos_x, db_imagerender.pos_y))
+
+        newslideimage = newslideimage.resize((477, 256))
+        newslideimage.save(server["IMAGE_PATH"] + str(slide_id) + ".png")
+    return FileResponse(server["IMAGE_PATH"] + str(slide_id) + ".png")  # "/api/presentation/images/"+
+    # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
+
+
+@app.get("/drawthumb/{slide_id}/{email}/")
 async def draw_thumb(slide_id: int, email: str, db: Session = Depends(get_db)):
     db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
     if db_slideimage is None:
@@ -717,7 +880,7 @@ async def draw_thumb(slide_id: int, email: str, db: Session = Depends(get_db)):
         fnt = ImageFont.truetype(server["FONT_PATH"] + db_textrender.font, db_textrender.size)
         draw.text(xy=(db_textrender.pos_x, db_textrender.pos_y), text=db_textrender.text, align=db_textrender.align,
                   anchor=db_textrender.anchor, font=fnt, fill=(db_textrender.color_r,
-                  db_textrender.color_g, db_textrender.color_b))
+                                                               db_textrender.color_g, db_textrender.color_b))
     # newslideimage.show()
     db_imagerender = crud.get_imagerender_by_slideid(db, slide_id=slide_id)
     if db_imagerender:
@@ -734,6 +897,7 @@ async def draw_thumb(slide_id: int, email: str, db: Session = Depends(get_db)):
 
     newslideimage = newslideimage.resize((477, 256))
     newslideimage.save(server["IMAGE_PATH"] + str(slide_id) + ".png")
+    print('new thumb')
     return FileResponse(server["IMAGE_PATH"] + str(slide_id) + ".png")  # "/api/presentation/images/"+
     # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
 
@@ -776,7 +940,7 @@ async def gendownloadzip(presentation_id: int, user_id: int, db: Session = Depen
     if db_slide is None:
         raise HTTPException(status_code=404, detail="Slide by Presentation_id not found")
     db_user = crud.get_user(db,user_id=user_id)
-    epath = db_user.email.replace(".", "").replace("@","")
+    epath = db_user.email  # .replace(".", "").replace("@","")
     if os.path.exists(epath):
         print(epath + " path is exists")
     else:
@@ -789,34 +953,38 @@ async def gendownloadzip(presentation_id: int, user_id: int, db: Session = Depen
     return FileResponse(epath + "/presentation" + str(presentation_id) + ".zip")
 
 
-@app.get("/testdrawslide/{slide_id}/{text}/{font_name}/{font_size}/{text_x}/{text_y}/{color_r}/{color_g}/{color_b}"
-         "/{image_x}/{image_y}/{image_width}/{image_height}/{email}")
-async def testdraw_slide(slide_id: int, text: str, font_name: str, font_size: int, text_x: int, text_y: int,
-                         color_r: int, color_g: int, color_b: int, image_x: int, image_y: int, image_width: int,
-                         image_height: int, email: str, db: Session = Depends(get_db)):
-    db_slideimage = crud.get_slideimage(db, slide_id=slide_id)
-    if db_slideimage is None:
-        raise HTTPException(status_code=404, detail="Slide id not found")
-    newslideimage = Image.open(io.BytesIO(db_slideimage.image))
-    # newslideimage.show()
-    draw = ImageDraw.Draw(newslideimage)
-    fnt = ImageFont.truetype(server["FONT_PATH"] + font_name, font_size)
-    draw.text(xy=(text_x, text_y), text=text, align='left', anchor='la', font=fnt, fill=(color_r, color_g, color_b))
-    # newslideimage.show()
-    db_logo = crud.get_image_by_email(db, email=email)
-    if db_logo is None:
-        logo = Image.open(server["IMAGE_PATH"] + "placeholder.png")
-    else:
-        logo = Image.open(io.BytesIO(db_logo.image))
-    logo = logo.resize((image_width, image_height))
-    try:
-        newslideimage.paste(logo, (image_x, image_y), logo)
-    except Exception:
-        newslideimage.paste(logo, (image_x, image_y))
+@app.get("/gendownloadazip/{user_id}/{presentation_id}/{hash_id}")
+async def downloadhashzip(presentation_id: int, user_id: int, hash_id: str, db: Session = Depends(get_db)):
+    db_user = crud.get_user(db,user_id=user_id)
+    epath = db_user.email
+    print(epath + "/" + hash_id + ".zip")
+    return FileResponse(epath + "/" + hash_id + ".zip",
+                        filename="presentation"+str(presentation_id)+".zip")
 
-    newslideimage.save(server["IMAGE_PATH"] + "test" + str(slide_id) + ".png")
-    return FileResponse(server["IMAGE_PATH"] + "test" + str(slide_id) + ".png")  # "/api/presentation/images/"+
-    # return FileResponse(newslideimage.tobytes("utf-8"), media_type="image/png")
+
+@app.post("/gendownloadazip/{user_id}/{presentation_id}/")  # {user_id}/{presentation_id}/
+async def gendownloadzip_by_hashid(presentation_id: int, user_id: int, db: Session = Depends(get_db)):
+    db_right = crud.get_right_by_userid_presentationid(db,user_id=user_id,presentation_id=presentation_id)
+    if db_right is None:
+        print("User No Right")
+        raise HTTPException(status_code=402, detail="User No Right")
+    db_slide = crud.get_slides_by_presentation_id(db, presentation_id=presentation_id)
+    if db_slide is None:
+        print("Slide by Presentation_id not found")
+        raise HTTPException(status_code=404, detail="Slide by Presentation_id not found")
+    db_user = crud.get_user(db,user_id=user_id)
+    epath = db_user.email  # .replace(".", "").replace("@","")
+    if os.path.exists(epath):
+        print(epath + " path is exists")
+    else:
+        os.mkdir(epath)
+    f_name = hashlib.md5(str(presentation_id).encode('utf-8')).hexdigest()
+    with zipfile.ZipFile(epath + "/" + f_name + ".zip", "w") as zf:
+        for slide in db_slide:
+            await draw_slide(slide_id=slide.id, email=db_user.email, db=db)
+            zf.write(epath + "/" + str(slide.id) + ".png")
+        # zf.setpassword(b"password")
+    return f_name
 
 
 @app.post("/orders/", response_model=schemas.Order)
@@ -875,6 +1043,14 @@ def read_right(user_id: int, db: Session = Depends(get_db)):
     db_right = crud.get_right_by_userid(db, user_id=user_id)
     if len(db_right) == 0:
         raise HTTPException(status_code=404, detail="User ID not found")
+    return db_right
+
+
+@app.get("/right/{user_id}/{presentation_id}/", response_model=schemas.Right)
+def read_right(user_id: int, presentation_id: int, db: Session = Depends(get_db)):
+    db_right = crud.get_right_by_userid_presentationid(db, user_id=user_id,presentation_id=presentation_id)
+    if db_right is None:
+        raise HTTPException(status_code=404, detail="User ID No Right")
     return db_right
 
 

@@ -9,15 +9,15 @@ import base64
 
 
 def get_bundle(db: Session, bundle_id: int):
-    return db.query(models.Bundle).filter(models.Bundle.id == bundle_id).first()
+    return db.query(models.Bundle).filter(models.Bundle.is_active).filter(models.Bundle.id == bundle_id).first()
 
 
 def get_bundle_by_title(db: Session, title: str):
-    return db.query(models.Bundle).filter(models.Bundle.title == title).first()
+    return db.query(models.Bundle).filter(models.Bundle.is_active).filter(models.Bundle.title == title).first()
 
 
 def get_bundles(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Bundle).offset(skip).limit(limit).all()
+    return db.query(models.Bundle).filter(models.Bundle.is_active).offset(skip).limit(limit).all()
 
 
 def create_bundle(db: Session, bundle: schemas.BundleCreate):
@@ -37,17 +37,27 @@ def edit_bundle(db: Session, bundle: schemas.BundleCreate):
     return db_bundle
 
 
+def delete_bundle(db: Session, bundle: schemas.Bundle):
+    db_bundle = db.query(models.Bundle).filter(models.Bundle.id == bundle.id).update(
+        {"is_active": False})
+    db.commit()
+    return db_bundle
+
+
 def get_bundlepresentation_by_bundleid(db: Session, bundle_id: int):
-    return db.query(models.BundlePresentation).filter(models.BundlePresentation.bundle_id == bundle_id).all()
+    return db.query(models.BundlePresentation).filter(models.BundlePresentation.is_active).filter(
+        models.BundlePresentation.bundle_id == bundle_id).all()
 
 
 def get_bundlepresentation_by_bundleidpresentationid(db: Session, bundle_id: int, presentation_id: int):
-    return db.query(models.BundlePresentation).filter(models.BundlePresentation.bundle_id == bundle_id).filter(
+    return db.query(models.BundlePresentation).filter(models.BundlePresentation.is_active).filter(
+        models.BundlePresentation.bundle_id == bundle_id).filter(
         models.BundlePresentation.presentation_id == presentation_id).first()
 
 
 def get_bundlepresentations(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.BundlePresentation).offset(skip).limit(limit).all()
+    return db.query(models.BundlePresentation).filter(models.BundlePresentation.is_active).offset(
+        skip).limit(limit).all()
 
 
 def create_bundlepresentation(db: Session, bundlepresentation: schemas.BundlePresentationCreate):
@@ -59,20 +69,27 @@ def create_bundlepresentation(db: Session, bundlepresentation: schemas.BundlePre
     return db_bundlepresentation
 
 
+def delete_bundlepresentation_by_bundleid(db: Session, bundle_id: int):
+    db_bundlepresentation = db.query(models.BundlePresentation).filter(
+        models.BundlePresentation.bundle_id == bundle_id).update({"is_active": False})
+    db.commit()
+    return db_bundlepresentation
+
+
 def get_user(db: Session, user_id: int):
-    return db.query(models.User).filter(models.User.id == user_id).first()
+    return db.query(models.User).filter(models.User.is_active).filter(models.User.id == user_id).first()
 
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+    return db.query(models.User).filter(models.User.is_active).filter(models.User.email == email).first()
 
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.User).offset(skip).limit(limit).all()
+    return db.query(models.User).filter(models.User.is_active).offset(skip).limit(limit).all()
 
 
 def get_user_column(db: Session):
-    return db.query(models.User).all()
+    return db.query(models.User).filter(models.User.is_active).all()
 
 
 def create_user(db: Session, user: schemas.UserCreate):
@@ -98,23 +115,30 @@ def edit_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
+def delete_user(db: Session, user: schemas.UserCreate):
+    db_user = db.query(models.User).filter(models.User.id == user.id).update(
+        {"is_active": False})
+    db.commit()
+    return db_user
+
+
 def get_presentations(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Presentation).order_by(models.Presentation.id).offset(skip).limit(limit).all()
+    return db.query(models.Presentation).order_by(models.Presentation.id).filter(models.Presentation.is_active).offset(skip).limit(limit).all()
 
 
 def get_presentation(db: Session, presentation_id: int):
-    return db.query(models.Presentation).filter(models.Presentation.id == presentation_id).all()
+    return db.query(models.Presentation).filter(models.Presentation.is_active).filter(models.Presentation.id == presentation_id).all()
 
 
 def get_presentation_by_title(db: Session, presentation_title: str):
-    return db.query(models.Presentation).filter(models.Presentation.title == presentation_title).all()
+    return db.query(models.Presentation).filter(models.Presentation.is_active).filter(models.Presentation.title == presentation_title).all()
 
 
 def get_presentation_by_email(db: Session, email: str):
     db_right = get_right_by_email(db, email=email)
     db_presentations: list[models.Presentation] = []
     for right in db_right:
-        presentation = db.query(models.Presentation).order_by(models.Presentation.id).filter(
+        presentation = db.query(models.Presentation).order_by(models.Presentation.id).filter(models.Presentation.is_active).filter(
             models.Presentation.id == right.presentation_id).first()
         db_presentations.append(presentation)
     return db_presentations
@@ -137,23 +161,23 @@ def edit_presentation(db: Session, presentation: schemas.PresentationCreate):
     return db_presentation
 
 
-def delete_presentation(db: Session, presentation_id: int):
-    db_presentation = db.query(models.Presentation).filter(models.Presentation.id == presentation_id).first()
-    db.delete(db_presentation)
+def delete_presentation(db: Session, presentation: schemas.PresentationCreate):
+    db_presentation = db.query(models.Presentation).filter(models.Presentation.id == presentation.id).update(
+        {"is_active": False})
     db.commit()
-    return
+    return db_presentation
 
 
 def get_category(db: Session, category_id: int):
-    return db.query(models.Category).filter(models.Category.id == category_id).first()
+    return db.query(models.Category).filter(models.Category.is_active).filter(models.Category.id == category_id).first()
 
 
 def get_category_by_title(db: Session, title: str):
-    return db.query(models.Category).filter(models.Category.title == title).first()
+    return db.query(models.Category).filter(models.Category.is_active).filter(models.Category.title == title).first()
 
 
 def get_categories(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Category).offset(skip).limit(limit).all()
+    return db.query(models.Category).filter(models.Category.is_active).offset(skip).limit(limit).all()
 
 
 def create_category(db: Session, category: schemas.CategoryCreate):
@@ -165,25 +189,25 @@ def create_category(db: Session, category: schemas.CategoryCreate):
 
 
 def get_slides(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Slide).order_by(models.Slide.id).offset(skip).limit(limit).all()
+    return db.query(models.Slide).order_by(models.Slide.id).filter(models.Slide.is_active).offset(skip).limit(limit).all()
 
 
 def get_slide(db: Session, slide_id: int):
-    return db.query(models.Slide).filter(models.Slide.id == slide_id).first()
+    return db.query(models.Slide).filter(models.Slide.is_active).filter(models.Slide.id == slide_id).first()
 
 
 def get_slide_by_title(db: Session, slide_title: str, presentation_id):
-    return db.query(models.Slide).filter(models.Slide.title == slide_title).filter(
+    return db.query(models.Slide).filter(models.Slide.is_active).filter(models.Slide.title == slide_title).filter(
         models.Slide.presentation_id == presentation_id).first()
 
 
 def get_slide_by_slideid(db: Session, id: int):
-    return db.query(models.Slide).order_by(models.Slide.order).filter(
+    return db.query(models.Slide).order_by(models.Slide.order).filter(models.Slide.is_active).filter(
         models.Slide.id == id).first()  # .first()
 
 
 def get_slides_by_presentation_id(db: Session, presentation_id: int):
-    return db.query(models.Slide).order_by(models.Slide.order).filter(
+    return db.query(models.Slide).order_by(models.Slide.order).filter(models.Slide.is_active).filter(
         models.Slide.presentation_id == presentation_id).all()  # .first()
 
 
@@ -205,12 +229,20 @@ def edit_slide(db: Session, slide: schemas.Slide):
     return db_slide
 
 
+def delete_slide(db: Session, slide: schemas.Slide):
+    db_slide = db.query(models.Slide).filter(models.Slide.id == slide.id).update(
+        {"is_active": False})
+    db.commit()
+    return db_slide
+
+
 def get_slideimage(db: Session, slide_id: int):
     return db.query(models.SlideImage).filter(models.SlideImage.slide_id == slide_id).first()
 
 
 def get_slideimage_by_presentation_id(db: Session, presentation_id: int):
-    dbslide = db.query(models.Slide).filter(models.Slide.presentation_id == presentation_id).first()
+    dbslide = db.query(models.Slide).order_by(models.Slide.order).filter(
+        models.Slide.presentation_id == presentation_id).first()
     if dbslide is None:
         return None
     return db.query(models.SlideImage).filter(models.SlideImage.slide_id == dbslide.id).first()
@@ -228,7 +260,7 @@ def create_slideimage(db: Session, slideimage: schemas.SlideImageCreate):
     return db.query(models.SlideImage).count()  # db_slideimage
 
 
-def edit_slideimage(db: Session, slideimage: schemas.SlideImageCreate):
+def edit_slideimage(db: Session, slideimage: schemas.SlideImage):
     db_slideimage = db.query(models.SlideImage).filter(models.SlideImage.slide_id == slideimage.slide_id).update(
         {"image": convertToBinaryData(slideimage.image)})
     db_slideimage = models.SlideImage(slide_id=slideimage.slide_id, image=convertToBinaryData(slideimage.image))
@@ -315,7 +347,7 @@ def edit_textrender(db: Session, textrender: schemas.TextRenderCreate):
         {"title": textrender.title, "slide_id": textrender.slide_id, "text": textrender.text, "font": textrender.font,
          "size": textrender.size, "pos_x": textrender.pos_x, "pos_y": textrender.pos_y, "align": textrender.align,
          "anchor": textrender.anchor, "color_r": textrender.color_r,
-         "color_g": textrender.color_g,"color_b": textrender.color_b})
+         "color_g": textrender.color_g, "color_b": textrender.color_b})
     db.commit()
     db_textrender = db.query(models.TextRender).filter(models.TextRender.id == textrender.id).first()
     db.refresh(db_textrender)
@@ -345,8 +377,8 @@ def create_order(db: Session, order: schemas.OrderCreate):
 def create_order_right(db: Session, order: schemas.OrderCreate):
     db_order = models.Order(bundle_id=order.bundle_id, user_email=order.user_email, order_date=order.order_date)
     db.add(db_order)
-    print("add order success: "+order.user_email)
-    db_user = db.query(models.User).filter(models.User.email==order.user_email).first()
+    print("add order success: " + order.user_email)
+    db_user = db.query(models.User).filter(models.User.email == order.user_email).first()
     db_bundlepresentation = db.query(models.BundlePresentation).filter(
         models.BundlePresentation.bundle_id == order.bundle_id).all()
     for bp in db_bundlepresentation:
@@ -405,7 +437,8 @@ def get_images(db: Session, skip: int = 0, limit: int = 100):
 
 
 def create_image(db: Session, logoimage: schemas.LogoImageCreate):
-    db_changeimagelog = models.ChangeImageLog(user_id=logoimage.user_id,when=date.today().strftime("%Y-%m-%d %H:%M:%S"))
+    db_changeimagelog = models.ChangeImageLog(user_id=logoimage.user_id,
+                                              when=date.today().strftime("%Y-%m-%d %H:%M:%S"))
     db.add(db_changeimagelog)
     db.commit()
     db_image = models.LogoImage(user_id=logoimage.user_id, image=convertToBinaryData(logoimage.image))
@@ -424,8 +457,8 @@ def edit_image(db: Session, logoimage: schemas.LogoImageCreate):
     return db_image
 
 
-def edit_image_by_email(email:str, db: Session, logoimage: schemas.LogoImageCreate):
-    db_user = db.query(models.User).filter(models.User.email==email)
+def edit_image_by_email(email: str, db: Session, logoimage: schemas.LogoImageCreate):
+    db_user = db.query(models.User).filter(models.User.email == email)
     db_image = db.query(models.LogoImage).filter(models.LogoImage.user_id == db_user.user_id).update(
         {"image": convertToBinaryData(logoimage.image)})
     db.commit()
@@ -466,5 +499,3 @@ def create_changeimagelog(db: Session, changeimagelog: schemas.ChangeImageLog):
     db.commit()
     db.refresh(db_changeimagelog)
     return db_changeimagelog.id
-
-
