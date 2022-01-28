@@ -155,7 +155,8 @@ def get_presentation_by_email(db: Session, email: str):
         presentation = db.query(models.Presentation).order_by(models.Presentation.id).filter(
             models.Presentation.is_active).filter(
             models.Presentation.id == right.presentation_id).first()
-        db_presentations.append(presentation)
+        if presentation:
+            db_presentations.append(presentation)
     return db_presentations
 
 
@@ -416,8 +417,8 @@ def create_order_right(db: Session, order: schemas.OrderCreate):
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-    db_bundlepresentation = db.query(models.BundlePresentation).filter(
-        models.BundlePresentation.bundle_id == order.bundle_id).all()
+    db_bundlepresentation = db.query(models.BundlePresentation.presentation_id).filter(
+        models.BundlePresentation.bundle_id == order.bundle_id).distinct().all()
     db_right = db.query(models.Right).first()
     for bp in db_bundlepresentation:
         print("bd loop")
@@ -430,21 +431,29 @@ def create_order_right(db: Session, order: schemas.OrderCreate):
 
 
 def get_right_by_userid(db: Session, user_id: int):
-    return db.query(models.Right).filter(models.Right.is_active).filter(models.Right.user_id == user_id).all()
+    return db.query(models.Right.presentation_id).order_by(models.Right.presentation_id).filter(
+        models.Right.is_active).filter(
+        models.Right.user_id == user_id).distinct().all()
 
 
 def get_right_by_userid_presentationid(db: Session, user_id: int, presentation_id: int):
-    return db.query(models.Right).filter(models.Right.is_active).filter(models.Right.user_id == user_id).filter(
+    return db.query(models.Right).filter(models.Right.is_active).filter(
+        models.Right.user_id == user_id).filter(
         models.Right.presentation_id == presentation_id).first()
 
 
 def get_right_by_email(db: Session, email: str):
-    db_user = get_user_by_email(db, email=email)
-    return db.query(models.Right).filter(models.Right.is_active).filter(models.Right.user_id == db_user.id).all()
+    db_user = get_user_by_email(db=db, email=email)
+    print(db_user.id)
+    # return db.query(models.Right.presentation_id).filter(models.Right.is_active).filter(
+    #     models.Right.user_id == db_user.id).distinct().all()
+    return get_right_by_userid(db=db, user_id=db_user.id)
 
 
 def get_right(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Right).filter(models.Right.is_active).offset(skip).limit(limit).all()
+    return db.query(models.Right.presentation_id).order_by(models.Right.presentation_id).filter(
+        models.Right.is_active).offset(skip).limit(
+        limit).distinct().all()
 
 
 def create_right(db: Session, right: schemas.RightCreate):

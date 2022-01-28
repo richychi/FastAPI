@@ -1043,7 +1043,7 @@ def create_right(right: schemas.RightCreate, db: Session = Depends(get_db)):
     return crud.create_right(db=db, right=right)
 
 
-@app.get("/right/", response_model=List[schemas.Right])
+@app.get("/right/")  # , response_model=List[schemas.Right])
 def read_right(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     db_right = crud.get_right(db, skip=skip, limit=limit)
     if len(db_right) == 0:
@@ -1051,7 +1051,7 @@ def read_right(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db_right
 
 
-@app.get("/right/{user_id}", response_model=List[schemas.Right])
+@app.get("/right/{user_id}")  # , response_model=List[schemas.Right])
 def read_right(user_id: int, db: Session = Depends(get_db)):
     db_right = crud.get_right_by_userid(db, user_id=user_id)
     if len(db_right) == 0:
@@ -1067,10 +1067,10 @@ def read_right(user_id: int, presentation_id: int, db: Session = Depends(get_db)
     return db_right
 
 
-@app.get("/right/email/{user_email}", response_model=List[schemas.Right])
+@app.get("/right/email/{user_email}")  # , response_model=List[schemas.Right])
 def read_right_by_email(user_email: str, db: Session = Depends(get_db)):
     db_right = crud.get_right_by_email(db, email=user_email)
-    if len(db_right) == 0:
+    if db_right is None:
         raise HTTPException(status_code=404, detail="Email not found")
     return db_right
 
