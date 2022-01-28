@@ -161,7 +161,8 @@ def get_presentation_by_email(db: Session, email: str):
 
 
 def create_presentation(db: Session, presentation: schemas.PresentationCreate):
-    db_presentation = models.Presentation(title=presentation.title, category_id=presentation.category_id)
+    db_presentation = models.Presentation(title=presentation.title, category_id=presentation.category_id,
+                                          description=presentation.description)
     db.add(db_presentation)
     db.commit()
     db.refresh(db_presentation)
